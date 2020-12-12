@@ -86,3 +86,17 @@ test-suite cbs_test
   hs-source-dirs:      test
   main-is:             cbs_test.hs
   type:                exitcode-stdio-1.0
+
+benchmark cbs_bench
+  import:              common-options
+  build-depends:       base,
+                       bytestring,
+                       hspec,
+                       couchbase-simple,
+                       utf8-string,
+                       time,
+                       mtl
+  hs-source-dirs:      benchmark
+  main-is:             Benchmark.hs
+  type:                exitcode-stdio-1.0
+

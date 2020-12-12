@@ -6,11 +6,12 @@ import Control.Concurrent
 import Control.Monad
 import Control.Monad.Trans
 import Data.Time
-import Database.Redis
+import Database.Couchbase
+import           Database.Couchbase.Types
 import Text.Printf
 
 nRequests, nClients :: Int
-nRequests = 100000
+nRequests = 1000
 nClients  = 50
 
 
@@ -20,14 +21,6 @@ main = do
     -- Preparation
     --
     conn <- connect defaultConnectInfo
-    runRedis conn $ do
-        _ <- flushall
-        mset [ ("k1","v1"), ("k2","v2"), ("k3","v3")
-                        , ("k4","v4"), ("k5","v5") ] >>= \case
-          Left _ -> error "error"
-          _ -> return ()
-    
-        return ()
     
     ----------------------------------------------------------------------
     -- Spawn clients
@@ -35,23 +28,23 @@ main = do
     start <- newEmptyMVar
     done  <- newEmptyMVar
     replicateM_ nClients $ forkIO $ do
-        runRedis conn $ forever $ do
+        runCouchbase conn $ forever $ do
             action <- liftIO $ takeMVar start
             action
             liftIO $ putMVar done ()
 
     let timeAction name nActions action = do
-        startT <- getCurrentTime
-        -- each clients runs ACTION nRepetitions times
-        let nRepetitions = nRequests `div` nClients `div` nActions
-        replicateM_ nClients $ putMVar start (replicateM_ nRepetitions action)
-        replicateM_ nClients $ takeMVar done
-        stopT <- getCurrentTime
-        let deltaT     = realToFrac $ diffUTCTime stopT startT
-            -- the real # of reqs send. We might have lost some due to 'div'.
-            actualReqs = nRepetitions * nActions * nClients
-            rqsPerSec  = fromIntegral actualReqs / deltaT :: Double
-        putStrLn $ printf "%-20s %10.2f Req/s" (name :: String) rqsPerSec
+          startT <- getCurrentTime
+          -- each clients runs ACTION nRepetitions times
+          let nRepetitions = nRequests `div` nClients `div` nActions
+          replicateM_ nClients $ putMVar start (replicateM_ nRepetitions action)
+          replicateM_ nClients $ takeMVar done
+          stopT <- getCurrentTime
+          let deltaT     = realToFrac $ diffUTCTime stopT startT
+              -- the real # of reqs send. We might have lost some due to 'div'.
+              actualReqs = nRepetitions * nActions * nClients
+              rqsPerSec  = fromIntegral actualReqs / deltaT :: Double
+          putStrLn $ printf "%-20s %10.2f Req/s" (name :: String) rqsPerSec
 
     ----------------------------------------------------------------------
     -- Benchmarks
@@ -61,7 +54,8 @@ main = do
           Right Pong -> return ()
           _ -> error "error"
         return ()
-        
+
+{-
     timeAction "get" 1 $ do
         get "key" >>= \case
           Right Nothing -> return ()
@@ -109,4 +103,4 @@ main = do
           TxSuccess 1000 -> return ()
           _ -> error "error"
         return ()
-    
+-}    
