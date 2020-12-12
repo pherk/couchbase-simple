@@ -1,0 +1,88 @@
+cabal-version:       3.0
+name:                couchbase-simple
+version:             0.1.0.0
+synopsis:            Haskell binding for libcouchbase v3.x
+homepage:            https://github.com/pherk/couchbase-simple
+license:             BSD-3-Clause
+license-file:        LICENSE
+author:              Peter Herkenrath
+maintainer:          p.herkenrath@uni-koeln.de
+category:            Database
+build-type:          Simple
+
+common common-options
+  GHC-options:         -Wall 
+  default-language:    Haskell2010
+  default-extensions:  BangPatterns
+                       ConstraintKinds
+                       DataKinds
+                       DeriveGeneric
+                       DerivingStrategies
+                       DerivingVia
+                       FlexibleContexts
+                       FlexibleInstances
+                       GeneralizedNewtypeDeriving
+                       InstanceSigs
+                       KindSignatures
+                       LambdaCase
+                       MultiParamTypeClasses
+                       OverloadedStrings
+                       OverloadedLabels
+                       PatternSynonyms
+                       RecordWildCards
+                       ScopedTypeVariables
+                       TypeApplications
+                       TypeFamilies
+                       TypeOperators
+library
+  import:              common-options
+  exposed-modules:     Database.Couchbase
+                       Database.Couchbase.Commands
+                       Database.Couchbase.Connection
+                       Database.Couchbase.ConnectionContext
+                       Database.Couchbase.Raw
+                       Database.Couchbase.Types
+                       Database.Couchbase.Core
+  other-modules:       Database.Couchbase.Core.Internal
+                       Database.Couchbase.JSON
+                       Database.Couchbase.Protocol
+                       Database.Couchbase.ProtocolPipelining
+                       Database.Couchbase.URL
+  build-depends:       base,
+                       async >= 2.1,
+                       bytestring,
+                       bytestring-lexing >= 0.5,
+                       containers,
+                       deepseq,
+                       errors,
+                       exceptions,
+                       HTTP,
+                       json,
+                       mtl,
+                       network-uri,
+                       resource-pool,
+                       scanner >= 0.2,
+                       text,
+                       time,
+                       utf8-string,
+                       c2hs-extra
+  hs-source-dirs:      src
+  build-tool-depends:  c2hs:c2hs
+  CC-options:          -Wall -pedantic
+  Include-Dirs:        include
+  extra-lib-dirs:      /usr/local/lib              
+-- /home/peter/devel/libcouchbase/build/lib
+  extra-libraries:     couchbase
+
+test-suite cbs_test
+  import:              common-options
+  build-depends:       base,
+                       bytestring,
+                       hspec,
+                       couchbase-simple,
+                       utf8-string
+  other-modules:       Database.Couchbase.CouchbaseSpec
+                       Database.Couchbase.RawSpec
+  hs-source-dirs:      test
+  main-is:             cbs_test.hs
+  type:                exitcode-stdio-1.0
