@@ -255,12 +255,18 @@ peekLcbCmdGetPtr ptr =
 {# fun lcb_get as lcbGetRaw {`Lcb', id `LcbCookie', `LcbCmdGet'} -> `LcbStatus' #}
 
 
-lcbGet :: Lcb -> LcbCookie -> B.ByteString -> IO LcbStatus
-lcbGet lcb cookie key = do
+lcbGet :: Lcb -> Maybe LcbCookie -> B.ByteString -> IO LcbStatus
+lcbGet lcb Nothing key = do
   (s,o) <- lcbCmdgetCreate
   -- putStrLn ("lcbCmdgetCreate : " ++ show s)
   s' <- lcbCmdgetKey o ks ksl
   -- putStrLn ("lcbCmdgetCreate : " ++ show s')
+  lcbGetRaw lcb nullPtr o
+  where ks = BU.toString key
+        ksl = length ks
+lcbGet lcb (Just cookie) key = do
+  (s,o) <- lcbCmdgetCreate
+  s' <- lcbCmdgetKey o ks ksl
   lcbGetRaw lcb cookie o
   where ks = BU.toString key
         ksl = length ks
@@ -329,24 +335,18 @@ peekLcbCmdStorePtr ptr =
 cToEnum :: (Integral i, Enum e) => i -> e
 cToEnum  = toEnum . fromIntegral
 
-lcbStore :: Lcb -> LcbCookie -> LcbStorage -> Maybe CULong -> B.ByteString -> B.ByteString -> IO LcbStatus
-lcbStore lcb cookie op Nothing key value = do
+lcbStore :: Lcb -> Maybe LcbCookie -> LcbStorage -> Maybe CULong -> B.ByteString -> B.ByteString -> IO LcbStatus
+lcbStore lcb mbc op mbcas key value = do
   (s,o) <- lcbCmdstoreCreate  op
   s''   <- lcbCmdstoreKey   o ks klen
   s'''  <- lcbCmdstoreValue o vs vlen
   -- putStrLn ("lcbCmdstoreCreate : " ++ show s'')
-  lcbStoreRaw lcb cookie o
-  where ks = BU.toString key 
-        klen = length ks
-        vs = BU.toString value
-        vlen = length vs
-lcbStore lcb cookie op (Just cas) key value = do
-  (s,o) <- lcbCmdstoreCreate  op
-  s'    <- lcbCmdstoreCas   o cas
-  s''   <- lcbCmdstoreKey   o ks klen
-  s'''  <- lcbCmdstoreValue o vs vlen
-  -- putStrLn ("lcbCmdstoreCreate : " ++ show s'')
-  lcbStoreRaw lcb cookie o
+  case mbcas of
+    Nothing  -> return LcbSuccess
+    (Just cas) -> lcbCmdstoreCas o cas
+  case mbc of
+    Nothing  -> lcbStoreRaw lcb nullPtr o
+    (Just cookie) -> lcbStoreRaw lcb cookie o
   where ks = BU.toString key 
         klen = length ks
         vs = BU.toString value
@@ -441,12 +441,18 @@ peekLcbCmdRemovePtr ptr =
 
 
 
-lcbRemove :: Lcb -> LcbCookie -> B.ByteString -> IO LcbStatus
-lcbRemove lcb cookie key = do
+lcbRemove :: Lcb -> Maybe LcbCookie -> B.ByteString -> IO LcbStatus
+lcbRemove lcb Nothing key = do
   (s,o) <- lcbCmdremoveCreate
   -- putStrLn ("lcbCmdremoveCreate : " ++ show s)
   s' <- lcbCmdremoveKey o ks ksl
   -- putStrLn ("lcbCmdremoveCreate : " ++ show s')
+  lcbRemoveRaw lcb nullPtr o
+  where ks  = BU.toString key 
+        ksl = length ks
+lcbRemove lcb (Just cookie) key = do
+  (s,o) <- lcbCmdremoveCreate
+  s' <- lcbCmdremoveKey o ks ksl
   lcbRemoveRaw lcb cookie o
   where ks  = BU.toString key 
         ksl = length ks
@@ -515,8 +521,8 @@ lcbRespqueryGetRow resp = do
   (s,rs,rlen) <- lcbRespqueryRow resp
   return (take (fromIntegral rlen) rs)
 
-lcbQuery :: Lcb -> LcbCookie -> B.ByteString -> LcbQueryCallback -> IO LcbStatus
-lcbQuery lcb cookie query callback = do
+lcbQuery :: Lcb -> Maybe LcbCookie -> B.ByteString -> LcbQueryCallback -> IO LcbStatus
+lcbQuery lcb Nothing query callback = do
   (s,o) <- lcbCmdqueryCreate
 --  putStrLn ("lcbCmdqueryCreate : " ++ show s)
   s' <- lcbCmdqueryStatement o qs qsl
@@ -524,6 +530,13 @@ lcbQuery lcb cookie query callback = do
 --  s''' <- lcb_cmdquery_option(cmd, "pretty", strlen("pretty"), "false", strlen("false"))
   s'''' <- lcbCmdqueryCallback o $ \ _ p -> callback p 
 --  putStrLn ("lcbCmdqueryCreate : " ++ show s')
+  lcbQueryRaw lcb nullPtr o
+  where qs  = BU.toString query 
+        qsl = length qs
+lcbQuery lcb (Just cookie) query callback = do
+  (s,o) <- lcbCmdqueryCreate
+  s' <- lcbCmdqueryStatement o qs qsl
+  s'''' <- lcbCmdqueryCallback o $ \ _ p -> callback p 
   lcbQueryRaw lcb cookie o
   where qs  = BU.toString query 
         qsl = length qs

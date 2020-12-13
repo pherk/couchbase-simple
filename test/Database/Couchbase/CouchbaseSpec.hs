@@ -21,6 +21,8 @@ withDatabaseConnection = bracket (C.connect connectInfo) C.disconnect
 spec :: Spec
 spec = do
     test_connect
+    test_set
+    test_get
 
 connectInfo :: C.ConnectInfo
 connectInfo = C.ConnInfo
@@ -41,4 +43,18 @@ test_connect =
   describe "connect" $
     it "ping cb" $ \conn -> do
       (runCouchbase conn $ do ping) `shouldReturn` (Right (Pong))
+
+test_set :: Spec
+test_set = 
+  around withDatabaseConnection $ do
+  describe "set" $
+    it "set key value" $ \conn -> do
+      (runCouchbase conn $ do set "key" "value") `shouldReturn` (Right Ok)
+
+test_get :: Spec
+test_get = 
+  around withDatabaseConnection $ do
+  describe "get" $
+    it "get key" $ \conn -> do
+      (runCouchbase conn $ do get "key") `shouldReturn` (Right (Just "value"))
 

@@ -9,8 +9,13 @@ module Database.Couchbase.Core (
   , runCouchbaseInternal
   , CouchbaseEnv(..)
   , ping
+  , set
+  , get
+--  , remove
+--  , query
 ) where
 
+import           Control.Concurrent.MVar
 import           Control.Monad.Reader
 import qualified Data.ByteString as B
 import           Data.IORef
@@ -108,6 +113,7 @@ sendRequest req = do
                 return r
     returnDecode r'
 -}
+
 ping :: (CouchbaseCtx m f, CouchbaseResult a)
     => m (f a)
 ping = do
@@ -120,6 +126,62 @@ ping = do
                      case s of
                        Raw.LcbSuccess -> return $ SingleLine "PONG"
                        _              -> return $ Error "LcbNoMatchingServer"
+                 setLastReply r
+                 return r
+     returnDecode r'
+
+get :: (CouchbaseCtx m f, CouchbaseResult a)
+    => B.ByteString
+    -> m (f a)
+get key = do
+     r' <- liftCouchbase $ Couchbase $ do
+         env <- ask
+         case env of
+             NonClusteredEnv{..} -> do
+                 r <- liftIO $ do
+                     meta <- newEmptyMVar
+                     -- {-# NOINLINE result #-}
+                     result <- newIORef B.empty
+                     let lcb = PP.handle envConn
+                     Raw.lcbInstallGetCallback lcb $ qcbw meta result
+                     Raw.lcbGet lcb Nothing key
+                     s <- Raw.lcbWait lcb Raw.LcbWaitDefault
+                     takeMVar meta 
+                     r <- readIORef result 
+                     case s of
+                       Raw.LcbSuccess -> return $ SingleLine r
+                       _              -> return $ Error "LcbErrDocumentNotFound"
+                 setLastReply r
+                 return r
+     returnDecode r'
+
+qcbw m r = qcb m r
+
+qcb :: MVar Raw.LcbStatus -> IORef B.ByteString -> Raw.LcbQueryCallback
+qcb m r resp = do
+   s <- lcbRespGetGetStatus resp 
+   case s of
+     Raw.LcbSuccess -> do value <- Raw.lcbRespGetGetValue resp
+                          writeIORef r value
+     _              -> return ()
+   putMVar m s
+
+set :: (CouchbaseCtx m f, CouchbaseResult a)
+    => B.ByteString
+    -> B.ByteString
+    -> m (f a)
+set key value = do
+     r' <- liftCouchbase $ Couchbase $ do
+         env <- ask
+         case env of
+             NonClusteredEnv{..} -> do
+                 r <- liftIO $ do
+                     let lcb = PP.handle envConn
+                     Raw.lcbStore lcb Nothing Raw.LcbStoreUpsert Nothing key value
+                     s <- Raw.lcbWait lcb Raw.LcbWaitDefault
+                     case s of
+                       Raw.LcbSuccess -> return $ SingleLine "OK"
+                       _              -> return $ Error "LcbErrDocumentNotFound"
                  setLastReply r
                  return r
      returnDecode r'

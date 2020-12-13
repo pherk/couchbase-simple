@@ -46,14 +46,14 @@ withConnection f = do
 setValue :: B.ByteString -> B.ByteString -> IO ()
 setValue k v =
   withConnection $ \lcb -> do
-    lcbStore lcb nullPtr LcbStoreUpsert Nothing k v >>= assertLcbSuccess "lcbStore() failed"
+    lcbStore lcb Nothing LcbStoreUpsert Nothing k v >>= assertLcbSuccess "lcbStore() failed"
     lcbWait lcb LcbWaitDefault >>= assertLcbSuccess "lcbWait() failed"
 
 
 removeKey :: B.ByteString -> IO ()
 removeKey k =
   withConnection $ \lcb -> do
-    lcbRemove lcb nullPtr k >>= assertLcbSuccess "lcbRemove() failed"
+    lcbRemove lcb Nothing k >>= assertLcbSuccess "lcbRemove() failed"
     lcbWait lcb LcbWaitDefault >>= assertLcbSuccess "lcbWait() failed"
 
 
@@ -80,7 +80,7 @@ test_get =
     it "LcbGet: succeeds" $ do
       setValue "key" "value"
       withConnection $ \lcb ->
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
 
     it "LcbGet: calls callback" $ do
       setValue "key" "value"
@@ -88,7 +88,7 @@ test_get =
         lcbInstallGetCallback lcb $ \resp -> do
           lcbRespGetGetStatus resp `shouldReturn` LcbSuccess
           lcbRespGetGetValue resp `shouldReturn` "value"
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
 test_remove :: Spec
@@ -97,7 +97,7 @@ test_remove =
     it "LcbRemove: succeeds" $ do
       setValue "key" "value"
       withConnection $ \lcb -> do
-        lcbRemove lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbRemove lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "lcbRemove: calls callback" $ do
@@ -105,17 +105,17 @@ test_remove =
       withConnection $ \lcb -> do
         lcbInstallRemoveCallback lcb $ \resp ->
           lcbRespRemoveGetStatus resp `shouldReturn` LcbSuccess
-        lcbRemove lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbRemove lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "lcbRemove: actually removes key" $ do
       setValue "key" "value"
       withConnection $ \lcb -> do
-        lcbRemove lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbRemove lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbInstallGetCallback lcb $ \resp ->
           lcbRespGetGetStatus resp `shouldReturn` LcbErrDocumentNotFound
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "lcbRemove: returns error in callback when there is nothing to remove" $ do
@@ -123,7 +123,7 @@ test_remove =
       withConnection $ \lcb -> do
         lcbInstallRemoveCallback lcb $ \resp ->
           lcbRespRemoveGetStatus resp `shouldReturn` LcbErrDocumentNotFound
-        lcbRemove lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbRemove lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
 test_store :: Spec
@@ -132,11 +132,11 @@ test_store =
     it "LcbStore: replaces existing key with LcbStoreReplace" $ do
       setValue "key" "value1"
       withConnection $ \lcb -> do
-        lcbStore lcb nullPtr LcbStoreReplace Nothing "key" "value2" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing LcbStoreReplace Nothing "key" "value2" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbInstallGetCallback lcb $ \resp ->
           lcbRespGetGetValue resp `shouldReturn` "value2"
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: returns error in callback with LcbStoreReplace when there is no key to replace" $ do
@@ -144,37 +144,37 @@ test_store =
       withConnection $ \lcb -> do
         lcbInstallStoreCallback lcb $ \resp ->
           lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentNotFound
-        lcbStore lcb nullPtr LcbStoreReplace Nothing "key" "value" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing LcbStoreReplace Nothing "key" "value" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: replaces existing key with LcbStoreUpsert" $ do
       setValue "key" "value1"
       withConnection $ \lcb -> do
-        lcbStore lcb nullPtr LcbStoreUpsert Nothing "key" "value2" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing LcbStoreUpsert Nothing "key" "value2" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbInstallGetCallback lcb $ \resp ->
           lcbRespGetGetValue resp `shouldReturn` "value2"
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: sets value with LcbUpsert even when there is no existing key" $ do
       removeKey "key"
       withConnection $ \lcb -> do
-        lcbStore lcb nullPtr LcbStoreUpsert Nothing "key" "value" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing LcbStoreUpsert Nothing "key" "value" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbInstallGetCallback lcb $ \resp ->
           lcbRespGetGetValue resp `shouldReturn` "value"
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: adds value with LcbStoreInsert" $ do
       removeKey "key"
       withConnection $ \lcb -> do
-        lcbStore lcb nullPtr  LcbStoreInsert Nothing "key" "value" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing  LcbStoreInsert Nothing "key" "value" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbInstallGetCallback lcb $ \resp ->
           lcbRespGetGetValue resp `shouldReturn` "value"
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: returns error in callback with LcbStoreUpsert when there is the key in database already" $ do
@@ -182,7 +182,7 @@ test_store =
       withConnection $ \lcb -> do
         lcbInstallStoreCallback lcb $ \resp ->
           lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-        lcbStore lcb nullPtr LcbStoreInsert Nothing "key" "value2" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing LcbStoreInsert Nothing "key" "value2" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: calls callback" $ do
@@ -190,27 +190,27 @@ test_store =
         lcbInstallStoreCallback lcb $ \resp -> do
           lcbRespStoreGetStatus resp `shouldReturn` LcbSuccess
           lcbRespStoreGetOp resp `shouldReturn` LcbStoreUpsert
-        lcbStore lcb nullPtr LcbStoreUpsert Nothing "key" "value2" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing LcbStoreUpsert Nothing "key" "value2" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: appends value with LcbStoreAppend" $ do
       setValue "key" "value1"
       withConnection $ \lcb -> do
-        lcbStore lcb nullPtr LcbStoreAppend Nothing "key" "value2" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing LcbStoreAppend Nothing "key" "value2" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbInstallGetCallback lcb $ \resp ->
           lcbRespGetGetValue resp `shouldReturn` "value1value2"
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: prepends value with LcbStorePrepend" $ do
       setValue "key" "value1"
       withConnection $ \lcb -> do
-        lcbStore lcb nullPtr LcbStorePrepend Nothing "key" "value2" `shouldReturn` LcbSuccess
+        lcbStore lcb Nothing LcbStorePrepend Nothing "key" "value2" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbInstallGetCallback lcb $ \resp ->
           lcbRespGetGetValue resp `shouldReturn` "value2value1"
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: changes CAS with LcbStoreReplace" $ do
@@ -221,9 +221,9 @@ test_store =
           lcbInstallStoreCallback lcb $ \resp -> do
             lcbRespStoreGetStatus resp `shouldReturn` LcbSuccess
             lcbRespStoreGetCas resp `shouldNotReturn` (LcbSuccess, oldCas)
-          lcbStore lcb nullPtr  LcbStoreReplace (Just oldCas) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing  LcbStoreReplace (Just oldCas) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: changes CAS with LcbStoreUpsert" $ do
@@ -234,9 +234,9 @@ test_store =
           lcbInstallStoreCallback lcb $ \resp -> do
             lcbRespStoreGetStatus resp `shouldReturn` LcbSuccess
             lcbRespStoreGetCas resp `shouldNotReturn` (LcbSuccess, oldCas)
-          lcbStore lcb nullPtr  LcbStoreUpsert (Just oldCas) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing  LcbStoreUpsert (Just oldCas) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: changes CAS with LcbStoreAppend" $ do
@@ -247,9 +247,9 @@ test_store =
           lcbInstallStoreCallback lcb $ \resp -> do
             lcbRespStoreGetStatus resp `shouldReturn` LcbSuccess
             lcbRespStoreGetCas resp `shouldNotReturn` (LcbSuccess, oldCas)
-          lcbStore lcb nullPtr LcbStoreAppend (Just oldCas) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing LcbStoreAppend (Just oldCas) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: changes CAS with LcbStorePrepend" $ do
@@ -260,9 +260,9 @@ test_store =
           lcbInstallStoreCallback lcb $ \resp -> do
             lcbRespStoreGetStatus resp `shouldReturn` LcbSuccess
             lcbRespStoreGetCas resp `shouldNotReturn` (LcbSuccess, oldCas)
-          lcbStore lcb nullPtr LcbStorePrepend (Just oldCas) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing LcbStorePrepend (Just oldCas) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: returns error in callback when you try LcbStoreReplace with CAS - 1" $ do
@@ -272,9 +272,9 @@ test_store =
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
             lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-          lcbStore lcb nullPtr LcbStoreReplace (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing LcbStoreReplace (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 {- Upsert ignores CAS, CAS should only used for Update Ops (Replace, Append, Prepend) 
     it "LcbStore: returns error in callback when you try LcbStoreUpsert with CAS - 1" $ do
@@ -284,9 +284,9 @@ test_store =
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
             lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-          lcbStore lcb nullPtr LcbStoreUpsert (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing LcbStoreUpsert (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 -}
     it "LcbStore: returns error in callback when you try LcbStoreAppend with CAS - 1" $ do
@@ -296,9 +296,9 @@ test_store =
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
             lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-          lcbStore lcb nullPtr  LcbStoreAppend (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing  LcbStoreAppend (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: returns error in callback when you try LcbStorePrepend with CAS - 1" $ do
@@ -308,9 +308,9 @@ test_store =
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
             lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-          lcbStore lcb nullPtr  LcbStorePrepend (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing  LcbStorePrepend (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: returns error in callback when you try LcbStoreReplace with CAS + 1" $ do
@@ -320,9 +320,9 @@ test_store =
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
             lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-          lcbStore lcb nullPtr  LcbStoreReplace (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing  LcbStoreReplace (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 {-
     it "LcbStore: returns error in callback when you try LcbStoreUpsert with CAS + 1" $ do
@@ -332,9 +332,9 @@ test_store =
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
             lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-          lcbStore lcb nullPtr  LcbStoreUpsert (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing  LcbStoreUpsert (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 -}
     it "LcbStore: returns error in callback when you try LcbStoreAppend with CAS + 1" $ do
@@ -344,9 +344,9 @@ test_store =
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
             lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-          lcbStore lcb nullPtr LcbStoreAppend (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing LcbStoreAppend (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
     it "LcbStore: returns error in callback when you try LcbStorePrepend with CAS + 1" $ do
@@ -356,9 +356,9 @@ test_store =
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
             lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
-          lcbStore lcb nullPtr  LcbStorePrepend (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
+          lcbStore lcb Nothing  LcbStorePrepend (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
-        lcbGet lcb nullPtr "key" `shouldReturn` LcbSuccess
+        lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
 test_query :: Spec
@@ -371,8 +371,8 @@ test_query =
       -- {-# NOINLINE result #-}
       result <- newIORef []
       withConnection $ \lcb -> do
---only with index        lcbQuery lcb nullPtr "select nabu.* from nabu n where META(n).id='key'" $ \resp -> do
-        lcbQuery lcb nullPtr "select nabu.* from nabu USE KEYS [\"key\"]" $ qcbw meta result
+--only with index        lcbQuery lcb Nothing "select nabu.* from nabu n where META(n).id='key'" $ \resp -> do
+        lcbQuery lcb Nothing "select nabu.* from nabu USE KEYS [\"key\"]" $ qcbw meta result
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         -- putStrLn "lcbQuery: meta:"
         takeMVar meta >>= putStrLn
