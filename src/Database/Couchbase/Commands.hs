@@ -3,7 +3,7 @@ module Database.Couchbase.Commands (
   ping -- 
 
   -- ** Keys
---  , del -- |Delete a key. Since Couchbase 1.0.0
+  , del -- |Delete a key. Since Couchbase 1.0.0
 --  , keys -- |Find all keys matching the given pattern. Since Couchbase 1.0.0
 --  , move -- |Move a key to another bucket. Since Couchbase 1.0.0
 
@@ -12,6 +12,8 @@ module Database.Couchbase.Commands (
   , get -- |Get the value of a key. Since Couchbase 1.0.0
   , set -- |Set the value of a key. Since Couchbase 1.0.0
 --  , quit --
+  -- ** queries
+  , query  
 ) where
 
 import Prelude hiding (min,max)
@@ -26,6 +28,12 @@ ping
     => m (f Status)
 ping  = C.ping
 
+del
+    :: (C.CouchbaseCtx m f)
+    => ByteString -- ^ key
+    -> m (f Status)
+del key = C.remove key
+
 get
     :: (C.CouchbaseCtx m f)
     => ByteString -- ^ key
@@ -38,6 +46,12 @@ set
     -> ByteString -- ^ value
     -> m (f Status)
 set key value = C.set key value
+
+query
+    :: (C.CouchbaseCtx m f)
+    => ByteString -- ^ key
+    -> m (f (Maybe [ByteString]))
+query q = C.query q
 
 {-
 keys

@@ -55,13 +55,25 @@ main = do
           _ -> error "error"
         return ()
 
-{-
-    timeAction "get" 1 $ do
-        get "key" >>= \case
-          Right Nothing -> return ()
+    timeAction "set" 1 $ do
+        set "key" "value" >>= \case
+          Right r -> return ()
           _ -> error "error"
         return ()
     
+    timeAction "get" 1 $ do
+        get "key" >>= \case
+          Right r -> return ()
+          _ -> error "error"
+        return ()
+    
+    timeAction "query use keys" 1 $ do
+        query "select nabu.* from nabu USE KEYS [\"key\"]" >>= \case
+          Right r -> return ()
+          _ -> error "error"
+        return ()
+    
+{-
     timeAction "mget" 1 $ do
         mget ["k1","k2","k3","k4","k5"] >>= \case
           Right vs -> do

@@ -11,10 +11,11 @@ module Database.Couchbase.Core (
   , ping
   , set
   , get
---  , remove
---  , query
+  , remove
+  , query
 ) where
 
+import qualified Codec.Binary.UTF8.String as E
 import           Control.Concurrent.MVar
 import           Control.Monad.Reader
 import qualified Data.ByteString as B
@@ -143,7 +144,7 @@ get key = do
                      -- {-# NOINLINE result #-}
                      result <- newIORef B.empty
                      let lcb = PP.handle envConn
-                     Raw.lcbInstallGetCallback lcb $ qcbw meta result
+                     Raw.lcbInstallGetCallback lcb $ getcbw meta result
                      Raw.lcbGet lcb Nothing key
                      s <- Raw.lcbWait lcb Raw.LcbWaitDefault
                      takeMVar meta 
@@ -155,10 +156,10 @@ get key = do
                  return r
      returnDecode r'
 
-qcbw m r = qcb m r
+getcbw m r = getcb m r
 
-qcb :: MVar Raw.LcbStatus -> IORef B.ByteString -> Raw.LcbQueryCallback
-qcb m r resp = do
+getcb :: MVar Raw.LcbStatus -> IORef B.ByteString -> Raw.LcbQueryCallback
+getcb m r resp = do
    s <- lcbRespGetGetStatus resp 
    case s of
      Raw.LcbSuccess -> do value <- Raw.lcbRespGetGetValue resp
@@ -185,3 +186,64 @@ set key value = do
                  setLastReply r
                  return r
      returnDecode r'
+
+remove :: (CouchbaseCtx m f, CouchbaseResult a)
+    => B.ByteString
+    -> m (f a)
+remove key = do
+     r' <- liftCouchbase $ Couchbase $ do
+         env <- ask
+         case env of
+             NonClusteredEnv{..} -> do
+                 r <- liftIO $ do
+                     let lcb = PP.handle envConn
+                     Raw.lcbRemove lcb Nothing key 
+                     s <- Raw.lcbWait lcb LcbWaitDefault
+                     case s of
+                       Raw.LcbSuccess -> return $ SingleLine "OK"
+                       _              -> return $ Error "LcbErrDocumentNotFound"
+                 setLastReply r
+                 return r
+     returnDecode r'
+
+query :: (CouchbaseCtx m f, CouchbaseResult a)
+    => B.ByteString
+    -> m (f a)
+query qstring = do
+     r' <- liftCouchbase $ Couchbase $ do
+         env <- ask
+         case env of
+             NonClusteredEnv{..} -> do
+                 r <- liftIO $ do
+                     meta <- newEmptyMVar
+                     -- {-# NOINLINE result #-}
+                     result <- newIORef []
+                     let lcb = PP.handle envConn
+                     --only with index        lcbQuery lcb Nothing "select nabu.* from nabu n where META(n).id='key'" $ \resp -> do
+                     lcbQuery lcb Nothing qstring $ querycbw meta result
+                     s <- Raw.lcbWait lcb Raw.LcbWaitDefault
+                     takeMVar meta 
+                     r <- readIORef result 
+                     case s of
+                         Raw.LcbSuccess -> return $ MultiBulk (Just r)
+                         _              -> return $ Error "LcbErrQuery"
+                 setLastReply r
+                 return r
+     returnDecode r'
+
+querycbw m r = querycb m r
+
+querycb :: MVar String -> IORef [Reply] -> LcbQueryCallback 
+querycb m r resp = do
+  s <- lcbRespQueryGetStatus resp 
+  case s of
+   Raw.LcbSuccess -> do
+               row <- lcbRespqueryGetRow resp 
+               isFinal <- lcbRespqueryIsFinal resp
+               rs <- readIORef r
+               case isFinal of
+                 0 -> writeIORef r  $ ((SingleLine (B.pack (E.encode row))) : rs)
+                 _ -> do 
+--                        writeIORef r  $ ((SingleLine (B.pack (E.encode row))) : rs)
+                        putMVar m "LcbSuccess"
+   _  -> return ()

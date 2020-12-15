@@ -18,7 +18,7 @@ import qualified Data.Text.Encoding as Text
 import qualified Data.Text.Read as Text
 import Control.Monad (replicateM)
 
--- |Low-level representation of replies from the Redis server.
+-- |Low-level representation of replies from the Couchbase server.
 data Reply = SingleLine ByteString
            | Error ByteString
            | Integer Integer

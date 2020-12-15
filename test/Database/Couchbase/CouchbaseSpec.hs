@@ -23,6 +23,8 @@ spec = do
     test_connect
     test_set
     test_get
+    test_del
+    test_query
 
 connectInfo :: C.ConnectInfo
 connectInfo = C.ConnInfo
@@ -57,4 +59,22 @@ test_get =
   describe "get" $
     it "get key" $ \conn -> do
       (runCouchbase conn $ do get "key") `shouldReturn` (Right (Just "value"))
+
+test_del :: Spec
+test_del = 
+  around withDatabaseConnection $ do
+  describe "del" $
+    it "del key" $ \conn -> do
+      (runCouchbase conn $ do del "key") `shouldReturn` (Right Ok)
+
+test_query :: Spec
+test_query = 
+  around withDatabaseConnection $ do
+  describe "query" $
+    it "query: use keys key" $ \conn -> do
+      let q = "select nabu.* from nabu USE KEYS [\"key\"]"
+      (runCouchbase conn $ do 
+          set "key" "{\"value\": 12345}"
+          query q) `shouldReturn` (Right (Just ["{\"value\":12345}"]))
+                              
 

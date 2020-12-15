@@ -78,7 +78,7 @@ instance CouchbaseResult CouchbaseType where
         "list"   -> List
         "set"    -> Set
         "zset"   -> ZSet
-        _        -> error $ "Hedis: unhandled redis type: " ++ show s
+        _        -> error $ "couchbase-simple: unhandled couchbase type: " ++ show s
     decode r = Left r
 
 instance CouchbaseResult Bool where

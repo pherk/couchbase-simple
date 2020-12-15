@@ -440,7 +440,6 @@ peekLcbCmdRemovePtr ptr =
   peek ptr >>= newLcbCmdRemove
 
 
-
 lcbRemove :: Lcb -> Maybe LcbCookie -> B.ByteString -> IO LcbStatus
 lcbRemove lcb Nothing key = do
   (s,o) <- lcbCmdremoveCreate
