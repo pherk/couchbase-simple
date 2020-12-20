@@ -1,6 +1,6 @@
 Early development stage, not for production yet.
 
-couchbase-simple provides a simple iHaskell binding for libCouchbase 3.x
+couchbase-simple provides a simple Haskell binding for libCouchbase 3.x
 
 - connect via pool
 - ping
@@ -16,11 +16,14 @@ The credits go to [Alexander Svyazin](https://github.com/asvyazin) and  [Falko P
 - hedis: a binding for Redis KV-database via sockets; supports asynchronous access aka pipelining
 
 build with stack:
+
 `$ stack build` 
 
 You can build and run tests:
+
 `$ stack test`
 
 You can also build and run benchmarks:
+
 `$ stack bench`
 
