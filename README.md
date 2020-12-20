@@ -1,11 +1,26 @@
 Early development stage, not for production yet.
 
-To build:
-1. `$ cabal configure --extra-lib-dirs <full path to libcouchbase lib dir>`
-1. `$ cabal build`
+couchbase-simple provides a simple iHaskell binding for libCouchbase 3.x
 
-Or build with stack:
-`$ stack build --extra-lib-dirs <full path to libcouchbase lib dir>`
+- connect via pool
+- ping
+- set, get, remove
+- query
+- asynchronous IO not yet implemented
 
-You can also build and run tests:
-`$ stack build --extra-lib-dirs <full path to libcouchbase lib dir> --test`
+You can easily see in the sources that I looked at [couchbase.hs](https://github.com/asvyazin/libcouchbase.hs) and
+[hedis](https://github.com/informatikr/hedis) and copied from both.
+The credits go to Alexander Svyazin](https://github.com/asvyazin) and  [Falko Peters](https://github.com/informatikr)
+
+- couchbase.hs: a even simpler binding for libCouchbase 2.x (connect, set, get, remove)
+- hedis: a binding for Redis KV-database via sockets; supports asynchronous access aka pipelining
+
+build with stack:
+`$ stack build` 
+
+You can build and run tests:
+`$ stack test`
+
+You can also build and run benchmarks:
+`$ stack bench`
+
