@@ -29,6 +29,7 @@ Prerequisites:
 - libevent : apt install libevent-dev
 - cmake: apt install cmake
 The installation was not complicated on my Ubuntu 20.0.4 system.
+Do not forget to update the loader config: sudo /sbin/ldconfig -v
 For my convienience I have included the header files in the project.
 You should edit the lib-dir and include-dir paths in the cabal file as needed.
 
