@@ -24,7 +24,12 @@ You can easily see in the sources that I looked at [couchbase.hs](https://github
 The credits go to [Alexander Svyazin](https://github.com/asvyazin) and  [Falko Peters](https://github.com/informatikr).
 My contribution is the upgrade to the significant API changes of libCouchbase v3.x and assembling the whole together. 
 
-[libCouchbase v3.x](https://github.com/couchbase/libcouchbase) must be installed. The installation was not complicated on my Ubuntu 20.0.4 system.
+[libCouchbase v3.x](https://github.com/couchbase/libcouchbase) must be installed.
+Prerequisites:
+- libevent : apt install libevent-dev
+- cmake: apt install cmake
+The installation was not complicated on my Ubuntu 20.0.4 system.
+Do not forget to update the loader config: sudo /sbin/ldconfig -v
 For my convienience I have included the header files in the project.
 You should edit the lib-dir and include-dir paths in the cabal file as needed.
 
