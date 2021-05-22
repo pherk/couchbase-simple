@@ -53,6 +53,6 @@ parseConnectInfo url = do
             then connectHost defaultConnectInfo
             else CC.HostName h
         , connectPort = maybe (connectPort defaultConnectInfo) (CC.PortNumber . fromIntegral) (port uriAuth)
-        , connectAuth = C8.pack <$> password uriAuth
+        , connectAuth = password uriAuth
         , connectDatabase = db
         }

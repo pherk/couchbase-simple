@@ -11,6 +11,7 @@ import           Codec.Binary.UTF8.String (encode)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.UTF8 as BU
 import qualified Data.ByteString.Char8 as B8
+import           Data.Maybe (fromMaybe)
 import Foreign
 import Foreign.C.String
 import Foreign.C.Types
@@ -30,6 +31,7 @@ import Debug.Trace
 
 {# pointer *lcb_CREATEOPTS as LcbCreateOpts foreign finalizer lcb_createopts_destroy newtype #}
 
+-- {# fun lcb_createopts_destroy as ^ {`LcbCreateOpts'} -> `()' #}
 
 {# pointer *lcb_INSTANCE as Lcb foreign finalizer lcb_destroy newtype #}
 
@@ -69,27 +71,27 @@ peekLcb ptr =
 
 data ConnectionParams =
   ConnectionParams
-  { connectionString :: String
-  , user :: Maybe String
-  , password :: Maybe String
-  , lcbType :: LcbType
+  { cpConnectionString :: String
+  , cpUser :: Maybe String
+  , cpPassword :: Maybe String
+  , cpLcbType :: LcbType
   } deriving (Show)
 
 
 lcbCreate :: ConnectionParams -> IO (LcbStatus, Lcb)
 lcbCreate params = do 
-  (s,o) <- lcbCreateoptsCreate  $ lcbType params
+  (s,o) <- lcbCreateoptsCreate  $ cpLcbType params
   -- putStrLn ("lcbCreateoptsCreate : " ++ show s)
   s' <- lcbCreateoptsConnstr o cs cslen 
   -- putStrLn ("lcbCreateoptsCreate : " ++ show s')
   s'' <- lcbCreateoptsCredentials o us uslen pws pwslen 
   -- putStrLn ("lcbCreateoptsCreate : " ++ show s'')
   lcbCreateRaw o
-  where cs = "couchbase://192.168.178.24:8091/nabu"
+  where cs = cpConnectionString params
         cslen = length cs
-        us = "admin" -- "erlang"
+        us = fromMaybe "" $ cpUser params
         uslen = length us
-        pws = "kikl968" -- "5RZz(8e^y.N(+y_H"
+        pws = fromMaybe "" $ cpPassword params
         pwslen = length pws
 
 
@@ -241,6 +243,8 @@ lcbInstallGetCallback lcb callback =
 type LcbCookie = Ptr ()
 
 {# pointer *lcb_CMDGET as LcbCmdGet foreign finalizer lcb_cmdget_destroy newtype #}
+
+{# fun lcb_cmdget_destroy as ^ {`LcbCmdGet'} -> `()' #}
 
 newLcbCmdGet :: Ptr LcbCmdGet -> IO LcbCmdGet
 newLcbCmdGet ptr =
@@ -484,6 +488,7 @@ type LcbQueryCallback =
 
 {# pointer *lcb_RESPQUERY as LcbRespQueryPtr #}
 {# pointer *lcb_CMDQUERY as LcbCmdQuery foreign finalizer lcb_cmdquery_destroy newtype #}
+-- {# fun lcb_cmdquery_destroy as ^ {`LcbCmdQuery'} -> `()' #}
 {# pointer *lcb_QUERY_HANDLE as LcbQueryHandle #}
 
 {# fun lcb_respquery_status as ^ {`LcbRespQueryPtr'} -> `LcbStatus' #}
@@ -499,7 +504,7 @@ type LcbQueryCallback =
 {# fun lcb_cmdquery_payload as ^ {`LcbCmdQuery', `String', `Int'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_statement as ^ {`LcbCmdQuery', `String', `Int'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_callback as ^ {`LcbCmdQuery', withLcbCallback* `LcbRespCallback'} -> `LcbStatus' #}
-{# fun lcb_cmdquery_named_param      as ^ {`LcbCmdQuery', `String', `Int', `String', `Int'} -> `LcbStatus' #}
+{# fun lcb_cmdquery_named_param as ^ {`LcbCmdQuery', `String', `Int', `String', `Int'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_positional_param as ^ {`LcbCmdQuery', `String', `Int'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_adhoc   as ^ {`LcbCmdQuery', `Int'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_pretty  as ^ {`LcbCmdQuery', `Int'} -> `LcbStatus' #}

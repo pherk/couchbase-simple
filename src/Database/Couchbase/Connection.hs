@@ -112,12 +112,12 @@ data Connection = Connection (Pool PP.Connection)
 data ConnectInfo = ConnInfo
     { connectHost           :: CC.HostName
     , connectPort           :: CC.PortID
-    , connectUser           :: Maybe B.ByteString
-    , connectAuth           :: Maybe B.ByteString
+    , connectUser           :: Maybe String
+    , connectAuth           :: Maybe String
     -- ^ When the server is protected by a password, set 'connectAuth' to 'Just'
     --   the password. Each connection will then authenticate by the 'auth'
     --   command.
-    , connectBucket         :: Maybe B.ByteString
+    , connectBucket         :: Maybe String
     , connectDatabase       :: Integer
     -- ^ Each connection will 'select' the database with the given index.
     , connectMaxConnections :: Int
@@ -154,8 +154,8 @@ instance Exception ConnectError
 --
 defaultConnectInfo :: ConnectInfo
 defaultConnectInfo = ConnInfo
-    { connectHost           = CC.HostName "localhost"
-    , connectPort           = CC.PortNumber 6379
+    { connectHost           = CC.HostName "couchbase://localhost"
+    , connectPort           = CC.PortNumber 8091
     , connectUser           = Nothing
     , connectAuth           = Nothing
     , connectBucket         = Just "default"

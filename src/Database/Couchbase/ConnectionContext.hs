@@ -19,10 +19,11 @@ module Database.Couchbase.ConnectionContext (
 
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (race)
-import Control.Monad(when)
+import           Control.Monad (when)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.IORef as IOR
+import           Data.Maybe (fromMaybe)
 import Control.Concurrent.MVar(newMVar, readMVar, swapMVar)
 import Control.Exception(bracketOnError, Exception, throwIO, try)
 import           Data.Typeable
@@ -56,29 +57,39 @@ data ConnectionLostException = ConnectionLost deriving Show
 instance Exception ConnectionLostException
 
 data HostName = HostName String
-    deriving Show
+
+instance Show HostName where
+  show (HostName h) = h
 
 data PortID = PortNumber Int
             | UnixSocket String
-    deriving (Eq, Show)
+    deriving (Eq)
 
-defaultParams :: Raw.ConnectionParams
-defaultParams =
+instance Show PortID where
+  show (PortNumber p) = show p
+  show (UnixSocket s) = s
+
+mkConnectionParams :: HostName -> PortID -> Maybe String -> Maybe String -> Maybe String -> Raw.ConnectionParams
+mkConnectionParams host port us pw bu =
    Raw.ConnectionParams
-   { connectionString = "couchbase://192.168.178.24:8091/nabu"
-   , user = Just "erlang"
-   , password = Just "5RZz(8e^y.N(+y_H"
-   , lcbType = Raw.LcbTypeBucket
+   { cpConnectionString = cs
+   , cpUser = Just user
+   , cpPassword = Just pwd
+   , cpLcbType = Raw.LcbTypeBucket
    }
+  where cs = "couchbase://" ++ (show host) ++ ":" ++ (show port) ++ "/" ++ bucket
+        bucket = fromMaybe "default" bu
+        user   = fromMaybe "" us
+        pwd    = fromMaybe "" pw
 
 
-connect :: HostName -> PortID -> Maybe B.ByteString -> Maybe B.ByteString -> Maybe B.ByteString -> Maybe Int -> IO ConnectionContext
-connect hostName portId mu mp mb timeoutOpt =
+connect :: HostName -> PortID -> Maybe String -> Maybe String -> Maybe String -> Maybe Int -> IO ConnectionContext
+connect host port mu mp mb timeoutOpt =
   bracketOnError connect disconnect $ \h -> do
     return $ NormalHandle h
   where
         connect = do
-            (s,lcb) <- Raw.lcbCreate defaultParams
+            (s',lcb) <- Raw.lcbCreate connParams
             Raw.lcbConnect lcb
             Raw.lcbWait lcb Raw.LcbWaitDefault
             s <-  Raw.lcbGetBootstrapStatus lcb
@@ -87,6 +98,7 @@ connect hostName portId mu mp mb timeoutOpt =
               _              -> error "failed"
         disconnect = do
             Raw.lcbDestroy 
+        connParams = mkConnectionParams host port mu mp mb
 
 ioErrorToConnLost :: IO a -> IO a
 ioErrorToConnLost a = a `catchIOError` const errConnClosed

@@ -54,7 +54,7 @@ handle conn = lcb
 fromCtx :: CC.ConnectionContext -> IO Connection
 fromCtx ctx = Conn ctx <$> newIORef [] <*> newIORef [] <*> newIORef 0
 
-connect :: CC.HostName -> CC.PortID -> Maybe S.ByteString -> Maybe S.ByteString -> Maybe S.ByteString -> Maybe Int -> IO Connection
+connect :: CC.HostName -> CC.PortID -> Maybe String -> Maybe String -> Maybe String -> Maybe Int -> IO Connection
 connect hostName portId user password bucket timeoutOpt = do
     connCtx <- CC.connect hostName portId user password bucket timeoutOpt
     connReplies <- newIORef []

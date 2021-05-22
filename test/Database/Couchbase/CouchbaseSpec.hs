@@ -20,7 +20,7 @@ withDatabaseConnection = bracket (C.connect connectInfo) C.disconnect
 
 spec :: Spec
 spec = do
-    test_connect
+--    test_connect
     test_set
     test_get
     test_del
@@ -28,10 +28,10 @@ spec = do
 
 connectInfo :: C.ConnectInfo
 connectInfo = C.ConnInfo
-     { C.connectHost           = CC.HostName "couchbase://192.168.178.24"
+     { C.connectHost           = CC.HostName "192.168.178.24"
      , C.connectPort           = CC.PortNumber 8091
-     , C.connectUser           = Just "erlang"
-     , C.connectAuth           = Just "5RZz(8e^y.N(+y_H"
+     , C.connectUser           = Just "pmh"
+     , C.connectAuth           = Just "kiklarch"
      , C.connectBucket         = Just "nabu"
      , C.connectDatabase       = 0
      , C.connectMaxConnections = 50
@@ -42,9 +42,9 @@ connectInfo = C.ConnInfo
 test_connect :: Spec
 test_connect = 
   around withDatabaseConnection $ do
-  describe "connect" $
+  describe "connect ping" $
     it "ping cb" $ \conn -> do
-      (runCouchbase conn $ do ping) `shouldReturn` (Right (Pong))
+      (runCouchbase conn $ do ping) `shouldReturn` (Right Pong)
 
 test_set :: Spec
 test_set = 

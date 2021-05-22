@@ -26,10 +26,10 @@ assertLcbSuccess msg err =
 defaultParams :: ConnectionParams
 defaultParams =
   ConnectionParams
-  { connectionString = "couchbase://192.168.178.24:8091/nabu"
-  , user = Just "erlang"
-  , password = Just "5RZz(8e^y.N(+y_H"
-  , lcbType = LcbTypeBucket
+  { cpConnectionString = "couchbase://192.168.178.24:8091/nabu"
+  , cpUser = Just "pmh"
+  , cpPassword = Just "kiklarch"
+  , cpLcbType = LcbTypeBucket
   }
 
 
@@ -271,7 +271,7 @@ test_store =
         lcbInstallGetCallback lcb $ \respGet -> do
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
-            lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
+            lcbRespStoreGetStatus resp `shouldReturn` LcbErrCasMismatch
           lcbStore lcb Nothing LcbStoreReplace (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
@@ -295,7 +295,7 @@ test_store =
         lcbInstallGetCallback lcb $ \respGet -> do
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
-            lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
+            lcbRespStoreGetStatus resp `shouldReturn` LcbErrCasMismatch
           lcbStore lcb Nothing  LcbStoreAppend (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
@@ -307,7 +307,7 @@ test_store =
         lcbInstallGetCallback lcb $ \respGet -> do
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
-            lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
+            lcbRespStoreGetStatus resp `shouldReturn` LcbErrCasMismatch
           lcbStore lcb Nothing  LcbStorePrepend (Just (oldCas - 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
@@ -319,19 +319,23 @@ test_store =
         lcbInstallGetCallback lcb $ \respGet -> do
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
-            lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
+            lcbRespStoreGetStatus resp `shouldReturn` LcbErrCasMismatch
           lcbStore lcb Nothing  LcbStoreReplace (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
+--
+--  "LcbStore: try LcbStoreUpsert with CAS + 1, ignores CAS; should be used only for Update Ops (Replace, Append, Prepend)"
+--  produces coredump in libcouchbase
+--
 {-
-    it "LcbStore: returns error in callback when you try LcbStoreUpsert with CAS + 1" $ do
+    it "LcbStore: try LcbStoreUpsert with CAS + 1, ignores CAS; should be used only for Update Ops (Replace, Append, Prepend)" $ do
       setValue "key" "value1"
       withConnection $ \lcb -> do
         lcbInstallGetCallback lcb $ \respGet -> do
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
-            lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
+            lcbRespStoreGetStatus resp `shouldReturn` LcbSuccess
           lcbStore lcb Nothing  LcbStoreUpsert (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
@@ -343,7 +347,7 @@ test_store =
         lcbInstallGetCallback lcb $ \respGet -> do
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
-            lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
+            lcbRespStoreGetStatus resp `shouldReturn` LcbErrCasMismatch
           lcbStore lcb Nothing LcbStoreAppend (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
@@ -355,7 +359,7 @@ test_store =
         lcbInstallGetCallback lcb $ \respGet -> do
           (s, oldCas) <- lcbRespGetGetCas respGet
           lcbInstallStoreCallback lcb $ \resp ->
-            lcbRespStoreGetStatus resp `shouldReturn` LcbErrDocumentExists
+            lcbRespStoreGetStatus resp `shouldReturn` LcbErrCasMismatch
           lcbStore lcb Nothing  LcbStorePrepend (Just (oldCas + 1)) "key" "value2" `shouldReturn` LcbSuccess
           lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         lcbGet lcb Nothing "key" `shouldReturn` LcbSuccess
