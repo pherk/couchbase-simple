@@ -11,7 +11,7 @@ category:            Database
 build-type:          Simple
 
 common common-options
-  GHC-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -T"
+  GHC-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N1 -T"
   default-language:    Haskell2010
   default-extensions:  BangPatterns
                        ConstraintKinds
