@@ -86,6 +86,9 @@ test-suite cbs_test
   hs-source-dirs:      test
   main-is:             cbs_test.hs
   type:                exitcode-stdio-1.0
+  extra-lib-dirs:      /usr/local/lib              
+-- /home/peter/devel/libcouchbase/build/lib
+  extra-libraries:     couchbase
 
 benchmark cbs_bench
   import:              common-options
