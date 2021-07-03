@@ -219,7 +219,7 @@ lcbRespGetGetValue pv = do
 --  putStrLn  ("lcbRespGetGetValue: " ++ show bytes)
 --  putStrLn  ("lcbRespGetGetValue: " ++ show nbytes)
 --  B.packCStringLen (bytes, fromIntegral nbytes)
-  return $ B.pack (encode bytes)
+  return $ B.pack (encode (take (fromIntegral nbytes) bytes))
 
 
 lcbRespGetGetStatus :: LcbRespGetPtr -> IO LcbStatus
