@@ -1,9 +1,13 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Database.Couchbase.RawSpec (spec) where
 
 import Control.Monad
 import Control.Concurrent.MVar
 import Database.Couchbase.Raw
-import qualified Data.ByteString as B
+import qualified Data.ByteString.UTF8 as BU
+import qualified Data.ByteString.Char8 as B8
+import qualified Data.Text.Encoding as TE
 import           Data.IORef
 import Foreign.Ptr
 import Test.Hspec
@@ -43,14 +47,14 @@ withConnection f = do
   f lcb
 
 
-setValue :: B.ByteString -> B.ByteString -> IO ()
+setValue :: BU.ByteString -> BU.ByteString -> IO ()
 setValue k v =
   withConnection $ \lcb -> do
     lcbStore lcb Nothing LcbStoreUpsert Nothing k v >>= assertLcbSuccess "lcbStore() failed"
     lcbWait lcb LcbWaitDefault >>= assertLcbSuccess "lcbWait() failed"
 
 
-removeKey :: B.ByteString -> IO ()
+removeKey :: BU.ByteString -> IO ()
 removeKey k =
   withConnection $ \lcb -> do
     lcbRemove lcb Nothing k >>= assertLcbSuccess "lcbRemove() failed"
@@ -368,9 +372,9 @@ test_store =
 test_query :: Spec
 test_query =
   describe "lcbQuery" $ do
-    it "lcbQuery: query existing key" $ do
+    it "lcbQuery: query existing key, value with umlauts" $ do
       -- value has to be in JSON format otherwise it is stored as binary
-      setValue "key" "{\"value\": 12345}"
+      setValue "key" (BU.fromString "{\"value\": \"äöüßÄÖÜ\"}")
       meta <- newEmptyMVar
       -- {-# NOINLINE result #-}
       result <- newIORef []
@@ -379,13 +383,13 @@ test_query =
         lcbQuery lcb Nothing "select nabu.* from nabu USE KEYS [\"key\"]" $ qcbw meta result
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         -- putStrLn "lcbQuery: meta:"
-        takeMVar meta >>= putStrLn
+        takeMVar meta >>= B8.putStrLn
         readIORef result >>= print
 
 
 qcbw m r = qcb m r
 
-qcb :: MVar String -> IORef [String] -> LcbQueryCallback 
+qcb :: MVar BU.ByteString -> IORef [BU.ByteString] -> LcbQueryCallback 
 qcb m r resp = do
   lcbRespQueryGetStatus resp `shouldReturn` LcbSuccess
   row <- lcbRespqueryGetRow resp 

@@ -7,10 +7,9 @@ module Database.Couchbase.Raw where
 
 import           Control.Monad (liftM)
 import           Control.Concurrent.MVar
-import           Codec.Binary.UTF8.String (encode)
+import qualified Codec.Binary.UTF8.String as E
 import qualified Data.ByteString as B
 import qualified Data.ByteString.UTF8 as BU
-import qualified Data.ByteString.Char8 as B8
 import           Data.Maybe (fromMaybe)
 import Foreign
 import Foreign.C.String
@@ -212,14 +211,14 @@ peekCUInt ptr =
 {# fun lcb_respget_cas    as ^ {`LcbRespGetPtr', alloca- `CULong' peekCAS*} -> `LcbStatus' #}
 {# fun lcb_respget_flags  as ^ {`LcbRespGetPtr', alloca- `Int' peekCUInt*} -> `LcbStatus' #}
 
-lcbRespGetGetValue :: LcbRespGetPtr -> IO B.ByteString
+lcbRespGetGetValue :: LcbRespGetPtr -> IO BU.ByteString
 lcbRespGetGetValue pv = do
   (s, bytes, nbytes) <- lcbRespgetValue pv
 -- putStrLn  ("lcbRespGetGetValue: " ++ show s)
 --  putStrLn  ("lcbRespGetGetValue: " ++ show bytes)
 --  putStrLn  ("lcbRespGetGetValue: " ++ show nbytes)
---  B.packCStringLen (bytes, fromIntegral nbytes)
-  return $ B.pack (encode (take (fromIntegral nbytes) bytes))
+--  return $ B.packCStringLen (bytes, fromIntegral nbytes)
+  return $ B.pack $ take (fromIntegral nbytes) (E.encode bytes)
 
 
 lcbRespGetGetStatus :: LcbRespGetPtr -> IO LcbStatus
@@ -259,7 +258,7 @@ peekLcbCmdGetPtr ptr =
 {# fun lcb_get as lcbGetRaw {`Lcb', id `LcbCookie', `LcbCmdGet'} -> `LcbStatus' #}
 
 
-lcbGet :: Lcb -> Maybe LcbCookie -> B.ByteString -> IO LcbStatus
+lcbGet :: Lcb -> Maybe LcbCookie -> BU.ByteString -> IO LcbStatus
 lcbGet lcb Nothing key = do
   (s,o) <- lcbCmdgetCreate
   -- putStrLn ("lcbCmdgetCreate : " ++ show s)
@@ -280,7 +279,7 @@ lcbGet lcb (Just cookie) key = do
 {# enum lcb_KVBUFTYPE as LcbKvBufType {underscoreToCase} deriving (Eq, Show) #}
 
 
-_lcbKreqSimple :: Ptr () -> B.ByteString -> IO a -> IO a
+_lcbKreqSimple :: Ptr () -> BU.ByteString -> IO a -> IO a
 _lcbKreqSimple p bs callback =
   B.useAsCStringLen bs $ \(pv, len) -> do
     {# set lcb_KEYBUF.type #} p $ fromIntegral $ fromEnum LcbKvCopy
@@ -289,7 +288,7 @@ _lcbKreqSimple p bs callback =
     callback
 
 
-_lcbCmdStoreSetKey :: Ptr () -> B.ByteString -> IO a -> IO a
+_lcbCmdStoreSetKey :: Ptr () -> BU.ByteString -> IO a -> IO a
 _lcbCmdStoreSetKey p bs callback =
   _lcbKreqSimple (plusPtr p {# offsetof lcb_CMDSTORE.key #}) bs callback
 
@@ -331,7 +330,7 @@ peekLcbCmdStorePtr ptr =
 {# fun lcb_cmdstore_create as ^ {alloca- `LcbCmdStore' peekLcbCmdStorePtr*, `LcbStorage'} -> `LcbStatus' #}
 {# fun lcb_cmdstore_cas as ^ {`LcbCmdStore', `CULong'} -> `LcbStatus' #}
 {# fun lcb_cmdstore_key as ^ {`LcbCmdStore', `String', `Int'} -> `LcbStatus' #}
-{# fun lcb_cmdstore_value as ^ {`LcbCmdStore', `String', `Int'} -> `LcbStatus' #}
+{# fun lcb_cmdstore_value as ^ {`LcbCmdStore', `CString', `Int'} -> `LcbStatus' #}
 {# fun lcb_store as lcbStoreRaw {`Lcb', id `LcbCookie', `LcbCmdStore'} -> `LcbStatus' #}
 
 -- |Convert a C enumeration to Haskell.
@@ -339,22 +338,21 @@ peekLcbCmdStorePtr ptr =
 cToEnum :: (Integral i, Enum e) => i -> e
 cToEnum  = toEnum . fromIntegral
 
-lcbStore :: Lcb -> Maybe LcbCookie -> LcbStorage -> Maybe CULong -> B.ByteString -> B.ByteString -> IO LcbStatus
+lcbStore :: Lcb -> Maybe LcbCookie -> LcbStorage -> Maybe CULong -> BU.ByteString -> BU.ByteString -> IO LcbStatus
 lcbStore lcb mbc op mbcas key value = do
-  (s,o) <- lcbCmdstoreCreate  op
-  s''   <- lcbCmdstoreKey   o ks klen
-  s'''  <- lcbCmdstoreValue o vs vlen
+  B.useAsCStringLen value (\(vs,vlen)-> do
+    (s,o) <- lcbCmdstoreCreate  op
+    s''   <- lcbCmdstoreKey   o ks klen
+    s'''  <- lcbCmdstoreValue o vs vlen
   -- putStrLn ("lcbCmdstoreCreate : " ++ show s'')
-  case mbcas of
-    Nothing  -> return LcbSuccess
-    (Just cas) -> lcbCmdstoreCas o cas
-  case mbc of
-    Nothing  -> lcbStoreRaw lcb nullPtr o
-    (Just cookie) -> lcbStoreRaw lcb cookie o
+    case mbcas of
+      Nothing  -> return LcbSuccess
+      (Just cas) -> lcbCmdstoreCas o cas
+    case mbc of
+      Nothing  -> lcbStoreRaw lcb nullPtr o
+      (Just cookie) -> lcbStoreRaw lcb cookie o)
   where ks = BU.toString key 
         klen = length ks
-        vs = BU.toString value
-        vlen = length vs
 
 
 
@@ -502,7 +500,7 @@ type LcbQueryCallback =
 {# fun lcb_cmdquery_create  as ^ {alloca- `LcbCmdQuery' peekLcbCmdQueryPtr*} -> `LcbStatus' #}
 {# fun lcb_cmdquery_reset   as ^ {`LcbCmdQuery'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_payload as ^ {`LcbCmdQuery', `String', `Int'} -> `LcbStatus' #}
-{# fun lcb_cmdquery_statement as ^ {`LcbCmdQuery', `String', `Int'} -> `LcbStatus' #}
+{# fun lcb_cmdquery_statement as ^ {`LcbCmdQuery', `CString', `Int'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_callback as ^ {`LcbCmdQuery', withLcbCallback* `LcbRespCallback'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_named_param as ^ {`LcbCmdQuery', `String', `Int', `String', `Int'} -> `LcbStatus' #}
 {# fun lcb_cmdquery_positional_param as ^ {`LcbCmdQuery', `String', `Int'} -> `LcbStatus' #}
@@ -520,32 +518,43 @@ peekLcbCmdQueryPtr :: Ptr (Ptr LcbCmdQuery) -> IO LcbCmdQuery
 peekLcbCmdQueryPtr ptr =
   peek ptr >>= newLcbCmdQuery
 
-lcbRespqueryGetRow :: LcbRespQueryPtr -> IO (String)
+lcbRespqueryGetRow :: LcbRespQueryPtr -> IO (BU.ByteString)
 lcbRespqueryGetRow resp = do
   (s,rs,rlen) <- lcbRespqueryRow resp
-  return (take (fromIntegral rlen) rs)
+  return $ B.pack $ take (fromIntegral rlen) (E.encode rs)
 
 lcbQuery :: Lcb -> Maybe LcbCookie -> B.ByteString -> LcbQueryCallback -> IO LcbStatus
 lcbQuery lcb Nothing query callback = do
-  (s,o) <- lcbCmdqueryCreate
+  B.useAsCStringLen query (\(qs,qsl) -> do
+    (s,o) <- lcbCmdqueryCreate
 --  putStrLn ("lcbCmdqueryCreate : " ++ show s)
-  s' <- lcbCmdqueryStatement o qs qsl
+    s' <- lcbCmdqueryStatement o qs qsl
 --  s'' <- lcb_cmdquery_positional_param(cmd, param, strlen(param))
 --  s''' <- lcb_cmdquery_option(cmd, "pretty", strlen("pretty"), "false", strlen("false"))
-  s'''' <- lcbCmdqueryCallback o $ \ _ p -> callback p 
+    s'''' <- lcbCmdqueryCallback o $ \ _ p -> callback p 
 --  putStrLn ("lcbCmdqueryCreate : " ++ show s')
-  lcbQueryRaw lcb nullPtr o
-  where qs  = BU.toString query 
-        qsl = length qs
+    lcbQueryRaw lcb nullPtr o)
 lcbQuery lcb (Just cookie) query callback = do
-  (s,o) <- lcbCmdqueryCreate
-  s' <- lcbCmdqueryStatement o qs qsl
-  s'''' <- lcbCmdqueryCallback o $ \ _ p -> callback p 
-  lcbQueryRaw lcb cookie o
-  where qs  = BU.toString query 
-        qsl = length qs
+  B.useAsCStringLen query (\(qs,qsl) -> do
+    (s,o) <- lcbCmdqueryCreate
+    s' <- lcbCmdqueryStatement o qs qsl
+    s'''' <- lcbCmdqueryCallback o $ \ _ p -> callback p 
+    lcbQueryRaw lcb cookie o)
 
-
+{-
+useAsCStrings3
+    :: (CString -> CString -> CString -> IO a)
+    -> ByteString -> ByteString -> ByteString
+    -> IO a
+useAsCStrings3 f a b c =
+    useAsCString a (\a' ->
+        useAsCString b (\b' ->
+            useAsCString c (\c' ->
+                f a' b' c'
+            )
+        )
+    )
+-}
 {-
  Ping
 -}
