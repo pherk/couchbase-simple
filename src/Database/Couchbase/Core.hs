@@ -18,7 +18,8 @@ module Database.Couchbase.Core (
 import qualified Codec.Binary.UTF8.String as E
 import           Control.Concurrent.MVar
 import           Control.Monad.Reader
-import qualified Data.ByteString as B
+import qualified Data.ByteString      as B
+import qualified Data.ByteString.UTF8 as BU
 import           Data.IORef
 import           Database.Couchbase.Core.Internal
 import           Database.Couchbase.Protocol
@@ -87,7 +88,7 @@ recv = liftCouchbase $ Couchbase $ do
   setLastReply r
   return r
 
-send :: (MonadCouchbase m) => [B.ByteString] -> m ()
+send :: (MonadCouchbase m) => [BU.ByteString] -> m ()
 send req = liftCouchbase $ Couchbase $ do
     conn <- asks envConn
     liftIO $ PP.send conn (renderRequest req)
@@ -103,7 +104,7 @@ send req = liftCouchbase $ Couchbase $ do
 -- @
 --
 sendRequest :: (CouchbaseCtx m f, CouchbaseResult a)
-    => [B.ByteString] -> m (f a)
+    => [BU.ByteString] -> m (f a)
 sendRequest req = do
     r' <- liftCouchbase $ Couchbase $ do
         env <- ask
@@ -132,7 +133,7 @@ ping = do
      returnDecode r'
 
 get :: (CouchbaseCtx m f, CouchbaseResult a)
-    => B.ByteString
+    => BU.ByteString
     -> m (f a)
 get key = do
      r' <- liftCouchbase $ Couchbase $ do
@@ -147,9 +148,9 @@ get key = do
                      Raw.lcbInstallGetCallback lcb $ getcbw meta result
                      Raw.lcbGet lcb Nothing key
                      s <- Raw.lcbWait lcb Raw.LcbWaitDefault
-                     takeMVar meta 
+                     s' <- takeMVar meta 
                      r <- readIORef result 
-                     case s of
+                     case s' of
                        Raw.LcbSuccess -> return $ SingleLine r
                        _              -> return $ Error "LcbErrDocumentNotFound"
                  setLastReply r
@@ -158,7 +159,7 @@ get key = do
 
 getcbw m r = getcb m r
 
-getcb :: MVar Raw.LcbStatus -> IORef B.ByteString -> Raw.LcbQueryCallback
+getcb :: MVar Raw.LcbStatus -> IORef BU.ByteString -> Raw.LcbQueryCallback
 getcb m r resp = do
    s <- lcbRespGetGetStatus resp 
    case s of
@@ -168,8 +169,8 @@ getcb m r resp = do
    putMVar m s
 
 set :: (CouchbaseCtx m f, CouchbaseResult a)
-    => B.ByteString
-    -> B.ByteString
+    => BU.ByteString
+    -> BU.ByteString
     -> m (f a)
 set key value = do
      r' <- liftCouchbase $ Couchbase $ do
@@ -188,7 +189,7 @@ set key value = do
      returnDecode r'
 
 remove :: (CouchbaseCtx m f, CouchbaseResult a)
-    => B.ByteString
+    => BU.ByteString
     -> m (f a)
 remove key = do
      r' <- liftCouchbase $ Couchbase $ do
@@ -207,7 +208,7 @@ remove key = do
      returnDecode r'
 
 query :: (CouchbaseCtx m f, CouchbaseResult a)
-    => B.ByteString
+    => BU.ByteString
     -> m (f a)
 query qstring = do
      r' <- liftCouchbase $ Couchbase $ do
@@ -222,18 +223,19 @@ query qstring = do
                      --only with index        lcbQuery lcb Nothing "select nabu.* from nabu n where META(n).id='key'" $ \resp -> do
                      lcbQuery lcb Nothing qstring $ querycbw meta result
                      s <- Raw.lcbWait lcb Raw.LcbWaitDefault
-                     takeMVar meta 
+                     s' <- takeMVar meta 
                      r <- readIORef result 
-                     case s of
+                     case s' of
                          Raw.LcbSuccess -> return $ MultiBulk (Just r)
                          _              -> return $ Error "LcbErrQuery"
                  setLastReply r
                  return r
      returnDecode r'
 
+querycbw :: MVar Raw.LcbStatus -> IORef [Reply] -> LcbQueryCallback
 querycbw m r = querycb m r
 
-querycb :: MVar String -> IORef [Reply] -> LcbQueryCallback 
+querycb :: MVar Raw.LcbStatus -> IORef [Reply] -> LcbQueryCallback 
 querycb m r resp = do
   s <- lcbRespQueryGetStatus resp 
   case s of
@@ -242,9 +244,8 @@ querycb m r resp = do
                isFinal <- lcbRespqueryIsFinal resp
                rs <- readIORef r
                case isFinal of
-                 -- 0 -> writeIORef r  $ ((SingleLine (B.pack (E.encode row))) : rs)
-                 0 -> writeIORef r  $ ((SingleLine row) : rs)
+                 0 -> writeIORef r  $ ((SingleLine (row)) : rs)
                  _ -> do 
 --                        writeIORef r  $ ((SingleLine (B.pack (E.encode row))) : rs)
-                        putMVar m "LcbSuccess"
+                        putMVar m s
    _  -> return ()

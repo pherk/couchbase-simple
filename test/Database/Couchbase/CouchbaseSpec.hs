@@ -1,9 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Database.Couchbase.CouchbaseSpec (spec) where
 
 import Control.Monad
 import Control.Exception (bracket)
-import qualified Data.ByteString as B
 import           Data.IORef
+import qualified Data.ByteString.UTF8    as BU
+import qualified Data.Text.Encoding      as TE
 import           Database.Couchbase
 import qualified Database.Couchbase.Core as Core
 import           Database.Couchbase.Commands
@@ -25,6 +27,7 @@ spec = do
     test_get
     test_del
     test_query
+    test_query_utf8
 
 connectInfo :: C.ConnectInfo
 connectInfo = C.ConnInfo
@@ -74,7 +77,18 @@ test_query =
     it "query: use keys key" $ \conn -> do
       let q = "select nabu.* from nabu USE KEYS [\"key\"]"
       (runCouchbase conn $ do 
+          del "key"
           set "key" "{\"value\": 12345}"
           query q) `shouldReturn` (Right (Just ["{\"value\":12345}"]))
                               
+test_query_utf8 :: Spec
+test_query_utf8 = 
+  around withDatabaseConnection $ do
+  describe "query" $
+    it "query: use keys key, value utf8: äöüßÄÖÜ" $ \conn -> do
+      let q = "select nabu.* from nabu USE KEYS [\"key\"]"
+      (runCouchbase conn $ do 
+          del "key"
+          set "key" (BU.fromString "{\"value\": \"äöüßÄÖÜ\"}")
+          query q) `shouldReturn` (Right (Just ["{\"value\":\"\195\164\195\182\195\188\195\159\195\132\195\150\195\156\"}"]))
 

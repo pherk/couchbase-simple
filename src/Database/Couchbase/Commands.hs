@@ -17,7 +17,7 @@ module Database.Couchbase.Commands (
 ) where
 
 import Prelude hiding (min,max)
-import           Data.ByteString (ByteString)
+import           Data.ByteString.UTF8 (ByteString)
 -- import Database.Couchbase.Core(CouchbaseCtx, sendRequest)
 import qualified Database.Couchbase.Core as C
 import           Database.Couchbase.Types
