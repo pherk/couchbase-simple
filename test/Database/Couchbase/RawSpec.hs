@@ -379,13 +379,13 @@ test_query =
         lcbQuery lcb Nothing "select nabu.* from nabu USE KEYS [\"key\"]" $ qcbw meta result
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
         -- putStrLn "lcbQuery: meta:"
-        takeMVar meta >>= putStrLn
+        takeMVar meta -- >>= putStrLn
         readIORef result >>= print
 
 
 qcbw m r = qcb m r
 
-qcb :: MVar String -> IORef [String] -> LcbQueryCallback 
+qcb :: MVar B.ByteString -> IORef [B.ByteString] -> LcbQueryCallback 
 qcb m r resp = do
   lcbRespQueryGetStatus resp `shouldReturn` LcbSuccess
   row <- lcbRespqueryGetRow resp 

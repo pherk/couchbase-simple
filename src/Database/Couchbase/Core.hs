@@ -242,7 +242,8 @@ querycb m r resp = do
                isFinal <- lcbRespqueryIsFinal resp
                rs <- readIORef r
                case isFinal of
-                 0 -> writeIORef r  $ ((SingleLine (B.pack (E.encode row))) : rs)
+                 -- 0 -> writeIORef r  $ ((SingleLine (B.pack (E.encode row))) : rs)
+                 0 -> writeIORef r  $ ((SingleLine row) : rs)
                  _ -> do 
 --                        writeIORef r  $ ((SingleLine (B.pack (E.encode row))) : rs)
                         putMVar m "LcbSuccess"
