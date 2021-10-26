@@ -31,8 +31,8 @@ defaultParams :: ConnectionParams
 defaultParams =
   ConnectionParams
   { cpConnectionString = "couchbase://192.168.178.24:8091/nabu"
-  , cpUser = Just "pmh"
-  , cpPassword = Just "kiklarch"
+  , cpUser = "pmh"
+  , cpPassword = "kiklarch"
   , cpLcbType = LcbTypeBucket
   }
 

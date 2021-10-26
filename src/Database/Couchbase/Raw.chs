@@ -53,8 +53,8 @@ peekLcbOptsPtr ptr =
   peek ptr >>= newLcbCreateOpts
 
 {# fun lcb_createopts_create as ^ {alloca- `LcbCreateOpts' peekLcbOptsPtr*, `LcbType'} -> `LcbStatus' #}
-{# fun lcb_createopts_connstr as ^ {`LcbCreateOpts', `String', `Int'} -> `LcbStatus' #}
-{# fun lcb_createopts_credentials as ^ {`LcbCreateOpts', `String', `Int', `String', `Int'} -> `LcbStatus' #}
+{# fun lcb_createopts_connstr as ^ {`LcbCreateOpts', `CString', `Int'} -> `LcbStatus' #}
+{# fun lcb_createopts_credentials as ^ {`LcbCreateOpts', `CString', `Int', `CString', `Int'} -> `LcbStatus' #}
 
 newLcb :: Ptr Lcb -> IO Lcb
 newLcb ptr =
@@ -71,27 +71,27 @@ peekLcb ptr =
 data ConnectionParams =
   ConnectionParams
   { cpConnectionString :: String
-  , cpUser :: Maybe String
-  , cpPassword :: Maybe String
+  , cpUser :: String
+  , cpPassword :: String
   , cpLcbType :: LcbType
   } deriving (Show)
 
 
 lcbCreate :: ConnectionParams -> IO (LcbStatus, Lcb)
 lcbCreate params = do 
-  (s,o) <- lcbCreateoptsCreate  $ cpLcbType params
+  B.useAsCStringLen cps (\(cs, csl) -> do
+    B.useAsCStringLen cpu (\(us, usl) -> do
+      B.useAsCStringLen cpp (\(pws, pwsl) -> do
+        (s,o) <- lcbCreateoptsCreate  $ cpLcbType params
   -- putStrLn ("lcbCreateoptsCreate : " ++ show s)
-  s' <- lcbCreateoptsConnstr o cs cslen 
+        s' <- lcbCreateoptsConnstr o cs csl 
   -- putStrLn ("lcbCreateoptsCreate : " ++ show s')
-  s'' <- lcbCreateoptsCredentials o us uslen pws pwslen 
+        s'' <- lcbCreateoptsCredentials o us usl pws pwsl 
   -- putStrLn ("lcbCreateoptsCreate : " ++ show s'')
-  lcbCreateRaw o
-  where cs = cpConnectionString params
-        cslen = length cs
-        us = fromMaybe "" $ cpUser params
-        uslen = length us
-        pws = fromMaybe "" $ cpPassword params
-        pwslen = length pws
+        lcbCreateRaw o)))
+  where cps = BU.fromString $ cpConnectionString params
+        cpu = BU.fromString $ cpUser params
+        cpp = BU.fromString $ cpPassword params
 
 
 {# fun lcb_connect as ^ {`Lcb'} -> `LcbStatus' #}
@@ -327,7 +327,7 @@ peekLcbCmdStorePtr ptr =
 
 {# fun lcb_cmdstore_create as ^ {alloca- `LcbCmdStore' peekLcbCmdStorePtr*, `LcbStorage'} -> `LcbStatus' #}
 {# fun lcb_cmdstore_cas as ^ {`LcbCmdStore', `CULong'} -> `LcbStatus' #}
-{# fun lcb_cmdstore_key as ^ {`LcbCmdStore', `String', `Int'} -> `LcbStatus' #}
+{# fun lcb_cmdstore_key as ^ {`LcbCmdStore', `CString', `Int'} -> `LcbStatus' #}
 {# fun lcb_cmdstore_value as ^ {`LcbCmdStore', `CString', `Int'} -> `LcbStatus' #}
 {# fun lcb_store as lcbStoreRaw {`Lcb', id `LcbCookie', `LcbCmdStore'} -> `LcbStatus' #}
 
@@ -338,20 +338,18 @@ cToEnum  = toEnum . fromIntegral
 
 lcbStore :: Lcb -> Maybe LcbCookie -> LcbStorage -> Maybe CULong -> BU.ByteString -> BU.ByteString -> IO LcbStatus
 lcbStore lcb mbc op mbcas key value = do
-  B.useAsCStringLen value (\(vs,vlen)-> do
-    (s,o) <- lcbCmdstoreCreate  op
-    s''   <- lcbCmdstoreKey   o ks klen
-    s'''  <- lcbCmdstoreValue o vs vlen
+  B.useAsCStringLen key   (\(ks,klen)-> do
+    B.useAsCStringLen value (\(vs,vlen)-> do
+      (s,o) <- lcbCmdstoreCreate  op
+      s''   <- lcbCmdstoreKey   o ks klen
+      s'''  <- lcbCmdstoreValue o vs vlen
   -- putStrLn ("lcbCmdstoreCreate : " ++ show s'')
-    case mbcas of
-      Nothing  -> return LcbSuccess
-      (Just cas) -> lcbCmdstoreCas o cas
-    case mbc of
-      Nothing  -> lcbStoreRaw lcb nullPtr o
-      (Just cookie) -> lcbStoreRaw lcb cookie o)
-  where ks = BU.toString key 
-        klen = length ks
-
+      case mbcas of
+        Nothing  -> return LcbSuccess
+        (Just cas) -> lcbCmdstoreCas o cas
+      case mbc of
+        Nothing  -> lcbStoreRaw lcb nullPtr o
+        (Just cookie) -> lcbStoreRaw lcb cookie o))
 
 
 lcbRespStoreGetOp :: LcbRespStorePtr -> IO LcbStorage
@@ -428,7 +426,7 @@ lcbInstallRemoveCallback lcb callback =
 {# pointer *lcb_CMDREMOVE as LcbCmdRemove foreign finalizer lcb_cmdremove_destroy newtype #}
 {# fun lcb_cmdremove_create as ^ {alloca- `LcbCmdRemove' peekLcbCmdRemovePtr*} -> `LcbStatus' #}
 {# fun lcb_cmdremove_cas as ^ {`LcbCmdRemove', `CULong'} -> `LcbStatus' #}
-{# fun lcb_cmdremove_key as ^ {`LcbCmdRemove', `String', `Int'} -> `LcbStatus' #}
+{# fun lcb_cmdremove_key as ^ {`LcbCmdRemove', `CString', `Int'} -> `LcbStatus' #}
 {# fun lcb_remove as lcbRemoveRaw {`Lcb', id `LcbCookie', `LcbCmdRemove'} -> `LcbStatus' #}
 
 newLcbCmdRemove :: Ptr LcbCmdRemove -> IO LcbCmdRemove
@@ -442,19 +440,17 @@ peekLcbCmdRemovePtr ptr =
 
 lcbRemove :: Lcb -> Maybe LcbCookie -> B.ByteString -> IO LcbStatus
 lcbRemove lcb Nothing key = do
-  (s,o) <- lcbCmdremoveCreate
+  B.useAsCStringLen key $ \(ks, ksl) -> do
+    (s,o) <- lcbCmdremoveCreate
   -- putStrLn ("lcbCmdremoveCreate : " ++ show s)
-  s' <- lcbCmdremoveKey o ks ksl
+    s' <- lcbCmdremoveKey o ks ksl
   -- putStrLn ("lcbCmdremoveCreate : " ++ show s')
-  lcbRemoveRaw lcb nullPtr o
-  where ks  = BU.toString key 
-        ksl = length ks
+    lcbRemoveRaw lcb nullPtr o
 lcbRemove lcb (Just cookie) key = do
-  (s,o) <- lcbCmdremoveCreate
-  s' <- lcbCmdremoveKey o ks ksl
-  lcbRemoveRaw lcb cookie o
-  where ks  = BU.toString key 
-        ksl = length ks
+  B.useAsCStringLen key $ \(ks, ksl) -> do
+    (s,o) <- lcbCmdremoveCreate
+    s' <- lcbCmdremoveKey o ks ksl
+    lcbRemoveRaw lcb cookie o
 
 
 -- {# fun lcb_wait as ^ {`Lcb'} -> `LcbStatus' #}

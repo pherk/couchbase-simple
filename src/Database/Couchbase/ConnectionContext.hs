@@ -73,8 +73,8 @@ mkConnectionParams :: HostName -> PortID -> Maybe String -> Maybe String -> Mayb
 mkConnectionParams host port us pw bu =
    Raw.ConnectionParams
    { cpConnectionString = cs
-   , cpUser = Just user
-   , cpPassword = Just pwd
+   , cpUser = user
+   , cpPassword = pwd
    , cpLcbType = Raw.LcbTypeBucket
    }
   where cs = "couchbase://" ++ (show host) ++ ":" ++ (show port) ++ "/" ++ bucket
