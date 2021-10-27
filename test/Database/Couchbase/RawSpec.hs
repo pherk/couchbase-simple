@@ -193,7 +193,7 @@ test_store =
       withConnection $ \lcb -> do
         lcbInstallStoreCallback lcb $ \resp -> do
           lcbRespStoreGetStatus resp `shouldReturn` LcbSuccess
-          lcbRespStoreGetOp resp `shouldReturn` LcbStoreUpsert
+          lcbRespStoreGetOp resp `shouldReturn` (LcbSuccess, LcbStoreUpsert)
         lcbStore lcb Nothing LcbStoreUpsert Nothing "key" "value2" `shouldReturn` LcbSuccess
         lcbWait lcb LcbWaitDefault `shouldReturn` LcbSuccess
 
