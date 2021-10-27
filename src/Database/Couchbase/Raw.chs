@@ -21,7 +21,6 @@ import Debug.Trace
 
 
 #include <libcouchbase/couchbase.h>
-#include <libcouchbase/internalstructs.h>
 
 {# context lib="libcouchbase" #}
 
