@@ -290,7 +290,10 @@ typedef enum {
      * According to the spec all xattr commands should come first,
      * followed by the commands for the document body
      */
-    PROTOCOL_BINARY_RESPONSE_SUBDOC_INVALID_XATTR_ORDER = 0xd4
+    PROTOCOL_BINARY_RESPONSE_SUBDOC_INVALID_XATTR_ORDER = 0xd4,
+
+    /** UNSPECIFIED, the server does not use this status code */
+    PROTOCOL_BINARY_RESPONSE_UNSPECIFIED = 0xff
 } protocol_binary_response_status;
 
 /**
@@ -811,6 +814,7 @@ typedef enum {
     PROTOCOL_BINARY_FEATURE_ALT_REQUEST_SUPPORT = 0x10,
     PROTOCOL_BINARY_FEATURE_SYNC_REPLICATION = 0x11,
     PROTOCOL_BINARY_FEATURE_COLLECTIONS = 0x12,
+    PROTOCOL_BINARY_FEATURE_PRESERVE_TTL = 0x14,
     PROTOCOL_BINARY_FEATURE_CREATE_AS_DELETED = 0x17
 } protocol_binary_hello_features;
 
@@ -837,6 +841,7 @@ typedef enum {
     (a == PROTOCOL_BINARY_FEATURE_ALT_REQUEST_SUPPORT) ? "Alt request support": \
     (a == PROTOCOL_BINARY_FEATURE_SYNC_REPLICATION) ? "Synchronous Replication": \
     (a == PROTOCOL_BINARY_FEATURE_COLLECTIONS) ? "Collections": \
+    (a == PROTOCOL_BINARY_FEATURE_PRESERVE_TTL) ? "Preserve Expiry": \
     (a == PROTOCOL_BINARY_FEATURE_CREATE_AS_DELETED) ? "Create as Deleted": \
     "Unknown"
 // clang-format on

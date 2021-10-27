@@ -47,6 +47,7 @@ typedef struct lcb_HTTP_HANDLE_ lcb_HTTP_HANDLE;
 #include <libcouchbase/configuration.h>
 #include <libcouchbase/kvbuf.h>
 #include <libcouchbase/auth.h>
+#include <libcouchbase/metrics.h>
 #include <libcouchbase/tracing.h>
 #include <libcouchbase/logger.h>
 #include <libcouchbase/cntl.h>
@@ -267,7 +268,9 @@ LIBCOUCHBASE_API lcb_STATUS lcb_createopts_credentials(lcb_CREATEOPTS *options, 
                                                        size_t username_len, const char *password, size_t password_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_createopts_authenticator(lcb_CREATEOPTS *options, lcb_AUTHENTICATOR *auth);
 LIBCOUCHBASE_API lcb_STATUS lcb_createopts_io(lcb_CREATEOPTS *options, struct lcb_io_opt_st *io);
+LIBCOUCHBASE_API lcb_STATUS lcb_createopts_meter(lcb_CREATEOPTS *options, const lcbmetrics_METER *metrics);
 
+LIBCOUCHBASE_API lcb_STATUS lcb_createopts_tracer(lcb_CREATEOPTS *options, lcbtrace_TRACER *tracer);
 /**
  * @brief Create an instance of lcb.
  * @param instance Where the instance should be returned
@@ -537,8 +540,8 @@ typedef enum {
     LCB_DURABILITYLEVEL_PERSIST_TO_MAJORITY = 0x03
 } lcb_DURABILITY_LEVEL;
 
-typedef struct lcb_CMDBASE_ lcb_CMDBASE;
-typedef struct lcb_RESPBASE_ lcb_RESPBASE;
+typedef void lcb_CMDBASE;
+typedef void lcb_RESPBASE;
 
 /**
  * Callback invoked for responses.
@@ -703,6 +706,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdget_key(lcb_CMDGET *cmd, const char *key, siz
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdget_expiry(lcb_CMDGET *cmd, uint32_t expiration);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdget_locktime(lcb_CMDGET *cmd, uint32_t duration);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdget_timeout(lcb_CMDGET *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdget_on_behalf_of(lcb_CMDGET *cmd, const char *data, size_t data_len);
 
 LIBCOUCHBASE_API lcb_STATUS lcb_get(lcb_INSTANCE *instance, void *cookie, const lcb_CMDGET *cmd);
 /**@}*/
@@ -784,6 +791,7 @@ typedef enum {
 typedef struct lcb_RESPGETREPLICA_ lcb_RESPGETREPLICA;
 
 LIBCOUCHBASE_API lcb_STATUS lcb_respgetreplica_status(const lcb_RESPGETREPLICA *resp);
+LIBCOUCHBASE_API int lcb_respgetreplica_is_active(const lcb_RESPGETREPLICA *resp);
 LIBCOUCHBASE_API lcb_STATUS lcb_respgetreplica_error_context(const lcb_RESPGETREPLICA *resp,
                                                              const lcb_KEY_VALUE_ERROR_CONTEXT **ctx);
 LIBCOUCHBASE_API lcb_STATUS lcb_respgetreplica_cookie(const lcb_RESPGETREPLICA *resp, void **cookie);
@@ -804,6 +812,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdgetreplica_collection(lcb_CMDGETREPLICA *cmd,
                                                          const char *collection, size_t collection_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdgetreplica_key(lcb_CMDGETREPLICA *cmd, const char *key, size_t key_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdgetreplica_timeout(lcb_CMDGETREPLICA *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdgetreplica_on_behalf_of(lcb_CMDGETREPLICA *cmd, const char *data, size_t data_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_getreplica(lcb_INSTANCE *instance, void *cookie, const lcb_CMDGETREPLICA *cmd);
 
 /**@}*/
@@ -827,6 +839,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdexists_collection(lcb_CMDEXISTS *cmd, const c
                                                      const char *collection, size_t collection_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdexists_key(lcb_CMDEXISTS *cmd, const char *key, size_t key_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdexists_timeout(lcb_CMDEXISTS *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdexists_on_behalf_of(lcb_CMDEXISTS *cmd, const char *data, size_t data_len);
 
 LIBCOUCHBASE_API lcb_STATUS lcb_exists(lcb_INSTANCE *instance, void *cookie, const lcb_CMDEXISTS *cmd);
 
@@ -967,12 +983,17 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_key(lcb_CMDSTORE *cmd, const char *key,
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_value(lcb_CMDSTORE *cmd, const char *value, size_t value_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_value_iov(lcb_CMDSTORE *cmd, const lcb_IOV *value, size_t value_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_expiry(lcb_CMDSTORE *cmd, uint32_t expiration);
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_preserve_expiry(lcb_CMDSTORE *cmd, int should_preserve);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_cas(lcb_CMDSTORE *cmd, uint64_t cas);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_flags(lcb_CMDSTORE *cmd, uint32_t flags);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_datatype(lcb_CMDSTORE *cmd, uint8_t datatype);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_durability(lcb_CMDSTORE *cmd, lcb_DURABILITY_LEVEL level);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_durability_observe(lcb_CMDSTORE *cmd, int persist_to, int replicate_to);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_timeout(lcb_CMDSTORE *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdstore_on_behalf_of(lcb_CMDSTORE *cmd, const char *data, size_t data_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_store(lcb_INSTANCE *instance, void *cookie, const lcb_CMDSTORE *cmd);
 /**@}*/
 
@@ -1078,6 +1099,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdremove_key(lcb_CMDREMOVE *cmd, const char *ke
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdremove_cas(lcb_CMDREMOVE *cmd, uint64_t cas);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdremove_durability(lcb_CMDREMOVE *cmd, lcb_DURABILITY_LEVEL level);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdremove_timeout(lcb_CMDREMOVE *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdremove_on_behalf_of(lcb_CMDREMOVE *cmd, const char *data, size_t data_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_remove(lcb_INSTANCE *instance, void *cookie, const lcb_CMDREMOVE *cmd);
 
 /**@}*/
@@ -1164,8 +1189,13 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdcounter_expiry(lcb_CMDCOUNTER *cmd, uint32_t 
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdcounter_delta(lcb_CMDCOUNTER *cmd, int64_t number);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdcounter_initial(lcb_CMDCOUNTER *cmd, uint64_t number);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdcounter_durability(lcb_CMDCOUNTER *cmd, lcb_DURABILITY_LEVEL level);
-LIBCOUCHBASE_API lcb_STATUS lcb_cmdcounter_cas(lcb_CMDCOUNTER *cmd, uint64_t cas);
+LCB_DEPRECATED2(LIBCOUCHBASE_API lcb_STATUS lcb_cmdcounter_cas(lcb_CMDCOUNTER *cmd, uint64_t cas),
+                "CAS is not applicable to arithmetic operations");
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdcounter_timeout(lcb_CMDCOUNTER *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdcounter_on_behalf_of(lcb_CMDCOUNTER *cmd, const char *data, size_t data_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_counter(lcb_INSTANCE *instance, void *cookie, const lcb_CMDCOUNTER *cmd);
 
 /**@} (Group: Counter) */
@@ -1243,6 +1273,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdunlock_collection(lcb_CMDUNLOCK *cmd, const c
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdunlock_key(lcb_CMDUNLOCK *cmd, const char *key, size_t key_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdunlock_cas(lcb_CMDUNLOCK *cmd, uint64_t cas);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdunlock_timeout(lcb_CMDUNLOCK *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdunlock_on_behalf_of(lcb_CMDUNLOCK *cmd, const char *data, size_t data_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_unlock(lcb_INSTANCE *instance, void *cookie, const lcb_CMDUNLOCK *cmd);
 
 /**@} (Group: Unlock) */
@@ -1310,6 +1344,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdtouch_key(lcb_CMDTOUCH *cmd, const char *key,
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdtouch_expiry(lcb_CMDTOUCH *cmd, uint32_t expiration);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdtouch_durability(lcb_CMDTOUCH *cmd, lcb_DURABILITY_LEVEL level);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdtouch_timeout(lcb_CMDTOUCH *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdtouch_on_behalf_of(lcb_CMDTOUCH *cmd, const char *data, size_t data_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_touch(lcb_INSTANCE *instance, void *cookie, const lcb_CMDTOUCH *cmd);
 
 /**@} (Group: Touch) */
@@ -1497,6 +1535,8 @@ typedef enum {
      * but supports Keep-Alive
      */
     LCB_HTTP_TYPE_PING = 6,
+
+    LCB_HTTP_TYPE_EVENTING = 7,
 
     LCB_HTTP_TYPE_MAX
 } lcb_HTTP_TYPE;
@@ -2483,6 +2523,22 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_statement(lcb_CMDANALYTICS *cmd, co
                                                        size_t statement_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_named_param(lcb_CMDANALYTICS *cmd, const char *name, size_t name_len,
                                                          const char *value, size_t value_len);
+/**
+ * Sets the _positional_ arguments for the query
+ *
+ * @param cmd the command
+ * @param value the arguments encoded as JSON array
+ * @param value_len the length of the argument.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_positional_params(lcb_CMDANALYTICS *cmd, const char *value,
+                                                               size_t value_len);
+/**
+ * @deprecated This function will be marked as deprecated in 3.3.0, and will start emitting compiler warning. Use
+ * lcb_cmdanalytics_positional_params instead.
+ * @param cmd the command
+ * @param value the argument value in JSON encoding
+ * @param value_len the length of the encoded value
+ */
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_positional_param(lcb_CMDANALYTICS *cmd, const char *value,
                                                               size_t value_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_ingest_options(lcb_CMDANALYTICS *cmd, lcb_INGEST_OPTIONS *options);
@@ -2495,6 +2551,28 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_consistency(lcb_CMDANALYTICS *cmd, 
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_option(lcb_CMDANALYTICS *cmd, const char *name, size_t name_len,
                                                     const char *value, size_t value_len);
 /**
+ * Associate scope name with the query
+ * @param cmd the command
+ * @param scope the name of the scope
+ * @param scope_len length of the scope name string.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_scope_name(lcb_CMDANALYTICS *cmd, const char *scope, size_t scope_len);
+/**
+ * @uncommitted
+ *
+ * Associate scope_qualifier (also known as `query_context`) with the query.
+ *
+ * The qualifier must be in form `default:${bucket_name}.${scope_name}`.
+ *
+ * @see REST API definition at https://docs.couchbase.com/server/current/analytics/rest-service.html
+ *
+ * @param cmd the command
+ * @param qualifier the string containing qualifier
+ * @param qualifier_len length of the qualifier
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_scope_qualifier(lcb_CMDANALYTICS *cmd, const char *qualifier,
+                                                             size_t qualifier_len);
+/**
  * Get handle to analytics query.  Used when canceling a request.  See @ref lcb_respanalytics_handle as well
  *
  * @param cmd the command
@@ -2503,6 +2581,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_option(lcb_CMDANALYTICS *cmd, const
  */
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_handle(lcb_CMDANALYTICS *cmd, lcb_ANALYTICS_HANDLE **handle);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_timeout(lcb_CMDANALYTICS *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdanalytics_on_behalf_of(lcb_CMDANALYTICS *cmd, const char *data, size_t data_len);
 /**
  * Execute a Analytics query.
  *
@@ -2630,6 +2712,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdsearch_payload(lcb_CMDSEARCH *cmd, const char
  */
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdsearch_handle(lcb_CMDSEARCH *cmd, lcb_SEARCH_HANDLE **handle);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdsearch_timeout(lcb_CMDSEARCH *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdsearch_on_behalf_of(lcb_CMDSEARCH *cmd, const char *data, size_t data_len);
 
 /**
  * Issue a full-text query. The callback (lcb_SEARCH_CALLBACK) will be invoked
@@ -2872,12 +2958,19 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_scope_qualifier(lcb_CMDQUERY *cmd, cons
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_named_param(lcb_CMDQUERY *cmd, const char *name, size_t name_len,
                                                      const char *value, size_t value_len);
 /**
- * Adds a _positional_ argument for the query
+ * Sets the _positional_ arguments for the query
  *
- * The position is assumed to be the order they are set.
  * @param cmd the command
- * @param value the argument
+ * @param value the arguments encoded as JSON array
  * @param value_len the length of the argument.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_positional_params(lcb_CMDQUERY *cmd, const char *value, size_t value_len);
+/**
+ * @deprecated This function will be marked as deprecated in 3.3.0, and will start emitting compiler warning. Use
+ * lcb_cmdquery_positional_params instead.
+ * @param cmd the command
+ * @param value the argument value in JSON encoding
+ * @param value_len the length of the encoded value
  */
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_positional_param(lcb_CMDQUERY *cmd, const char *value, size_t value_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_adhoc(lcb_CMDQUERY *cmd, int adhoc);
@@ -2977,6 +3070,12 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_option(lcb_CMDQUERY *cmd, const char *n
                                                 size_t value_len);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_handle(lcb_CMDQUERY *cmd, lcb_QUERY_HANDLE **handle);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_timeout(lcb_CMDQUERY *cmd, uint32_t timeout);
+
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdquery_on_behalf_of(lcb_CMDQUERY *cmd, const char *data, size_t data_len);
+
 /**
  * Execute a N1QL query.
  *
@@ -3171,6 +3270,7 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_key(lcb_CMDSUBDOC *cmd, const char *ke
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_cas(lcb_CMDSUBDOC *cmd, uint64_t cas);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_specs(lcb_CMDSUBDOC *cmd, const lcb_SUBDOCSPECS *operations);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_expiry(lcb_CMDSUBDOC *cmd, uint32_t expiration);
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_preserve_expiry(lcb_CMDSUBDOC *cmd, int should_preserve);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_durability(lcb_CMDSUBDOC *cmd, lcb_DURABILITY_LEVEL level);
 typedef enum {
     LCB_SUBDOC_STORE_REPLACE = 0,
@@ -3186,6 +3286,10 @@ LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_access_deleted(lcb_CMDSUBDOC *cmd, int
  */
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_create_as_deleted(lcb_CMDSUBDOC *cmd, int flag);
 LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_timeout(lcb_CMDSUBDOC *cmd, uint32_t timeout);
+/**
+ * @internal Internal: This should never be used and is not supported.
+ */
+LIBCOUCHBASE_API lcb_STATUS lcb_cmdsubdoc_on_behalf_of(lcb_CMDSUBDOC *cmd, const char *data, size_t data_len);
 
 LIBCOUCHBASE_API lcb_STATUS lcb_subdoc(lcb_INSTANCE *instance, void *cookie, const lcb_CMDSUBDOC *cmd);
 /** @} */
