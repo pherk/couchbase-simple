@@ -1,6 +1,6 @@
 Early development stage, not for production yet.
 
-caveat:
+caveats:
 
 - I'm not a Haskell Pro
 - Code has to be cleaned from remnants and ugly parts
@@ -26,10 +26,14 @@ My contribution is the upgrade to the significant API changes of libCouchbase v3
 
 [libCouchbase v3.x](https://github.com/couchbase/libcouchbase) must be installed.
 Prerequisites:
+
 - libevent : apt install libevent-dev
 - cmake: apt install cmake
+
 The installation was not complicated on my Ubuntu 20.0.4 system.
+
 Do not forget to update the loader config: sudo /sbin/ldconfig -v
+
 For my convienience I have included the header files in the project.
 You should edit the lib-dir and include-dir paths in the cabal file as needed.
 
