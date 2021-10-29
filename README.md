@@ -5,7 +5,8 @@ caveats:
 - I'm not a Haskell Pro
 - Code has to be cleaned from remnants and ugly parts
 - Documentation is rudimentary
-- Most important, there will certainly still be memory leaks lurking around.
+- Most important, segfaults can occur running more than one capability (rtsopts=-N1) in an application (after an idle time).
+  I presume that there is a problem in my application with using the pool connections, possibly not in the library itself.
 
 couchbase-simple provides a simple Haskell binding for libCouchbase 3.x.
 
