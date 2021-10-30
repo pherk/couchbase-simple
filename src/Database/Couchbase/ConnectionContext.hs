@@ -112,12 +112,11 @@ errConnClosed = throwIO ConnectionLost
 disconnect :: ConnectionContext -> IO ()
 disconnect (NormalHandle h) = do
     putStrLn "try to disconnect"
-    s <- Raw.lcbPing h Nothing 
-    case s of
-      Raw.LcbSuccess -> do
-                          Raw.lcbDestroy h
-                          putStrLn "Lcb distroyed"
-      _              -> putStrLn "Lcb vanished"
+    -- TODO
+    -- commenting out can lead to memory leak?
+    -- the ptr take an finalizer in Raw.chs
+    -- Raw.lcbDestroy h
+    putStrLn "Lcb distroyed"
 
 flush :: ConnectionContext -> IO ()
 flush (NormalHandle h) = do
