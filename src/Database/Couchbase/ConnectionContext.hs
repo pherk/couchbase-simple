@@ -97,6 +97,7 @@ connect host port mu mp mb timeoutOpt =
               Raw.LcbSuccess -> return lcb
               _              -> error "failed"
         disconnect = do
+            error "failed: disconnect"
             Raw.lcbDestroy 
         connParams = mkConnectionParams host port mu mp mb
 
@@ -110,6 +111,7 @@ errConnClosed = throwIO ConnectionLost
 
 disconnect :: ConnectionContext -> IO ()
 disconnect (NormalHandle h) = do
+    putStrLn "disconnect"
     Raw.lcbDestroy h
 
 flush :: ConnectionContext -> IO ()
