@@ -112,7 +112,8 @@ errConnClosed = throwIO ConnectionLost
 disconnect :: ConnectionContext -> IO ()
 disconnect (NormalHandle h) = do
     putStrLn "try to disconnect"
-    case Raw.lcbPing h Nothing of
+    s <- Raw.lcbPing h Nothing 
+    case s of
       Raw.LcbSuccess -> do
                           Raw.lcbDestroy h
                           putStrLn "Lcb distroyed"
