@@ -1,12 +1,16 @@
 Early development stage, not for production yet.
 
+News (2021-10-31):
+
+- segfaults has been eliminated (hopefully ;-). Last segfault was double destroying Couchbase Lcb.
+- with concurrents user up to 200 no memory leak detected
+
 caveats:
 
 - I'm not a Haskell Pro
-- Code has to be cleaned from remnants and ugly parts
+- FFI Code has to be cleaned from remnants and ugly parts
 - Documentation is rudimentary
-- Most important, segfaults can occur running more than one capability (rtsopts=-N1) in an application (after an idle time).
-  I presume that there is a problem in my application with using the pool connections, possibly not in the library itself.
+
 
 couchbase-simple provides a simple Haskell binding for libCouchbase 3.x.
 
