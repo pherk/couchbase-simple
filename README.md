@@ -2,7 +2,8 @@ Early development stage, not for production yet.
 
 News (2021-10-31):
 
-- segfaults has been eliminated (hopefully ;-). Last segfault was double destroying Couchbase Lcb.
+- segfaults have been eliminated (hopefully ;-). 
+  The last nasty segfault was double destroying Couchbase Lcb which occured after running an hour.
 - with concurrents user up to 200 no memory leak detected
 
 caveats:
