@@ -1,14 +1,16 @@
 Early development stage, not for production yet.
 
-News (2021-10-31):
+News (2021-11-15):
 
+- a server using couchbase-simple is now running for 14 days
 - segfaults have been eliminated (hopefully ;-). 
   The last nasty segfault was double destroying Couchbase Lcb which occured after running an hour.
 - with concurrents user up to 200 no memory leak detected
 
 caveats:
 
-- I'm not a Haskell Pro
+- last libcouchbase tested: v3.2.3
+- Couchbase v7 not yet tested but should be compatible
 - FFI Code has to be cleaned from remnants and ugly parts
 - Documentation is rudimentary
 
@@ -30,7 +32,7 @@ You can easily see in the sources that I looked at [couchbase.hs](https://github
 The credits go to [Alexander Svyazin](https://github.com/asvyazin) and  [Falko Peters](https://github.com/informatikr).
 My contribution is the upgrade to the significant API changes of libCouchbase v3.x and assembling the whole together. 
 
-[libCouchbase v3.x](https://github.com/couchbase/libcouchbase) must be installed.
+Matching [libCouchbase v3.x](https://github.com/couchbase/libcouchbase) must be installed.
 Prerequisites:
 
 - libevent : apt install libevent-dev
