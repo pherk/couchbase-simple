@@ -96,8 +96,11 @@ module Database.Couchbase (
 
     -- * Low-Level Command API
 --    sendRequest,
---    Reply(..), Status(..), CouchbaseResult(..), ConnectionLostException(..),
---    ConnectTimeout(..),
+--    Reply(..)
+    , Status(..)
+    , CouchbaseResult(..)
+    , ConnectionLostException(..)
+    , ConnectTimeout(..)
 
     --
 --    HashSlot, keyToSlot
