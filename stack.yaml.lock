@@ -7,20 +7,20 @@ packages:
 - completed:
     hackage: c2hs-extra-0.1.0.1@sha256:d1a3395cdad371c97351e2548676b054ed32d85a4472ec2e5bcc92c2450d8e17,901
     pantry-tree:
-      size: 221
       sha256: e85c0360e9fca644ba825de5a35af7ed2452a5784ea2ccc2b91ba363f5dec1b7
+      size: 221
   original:
     hackage: c2hs-extra-0.1.0.1@sha256:d1a3395cdad371c97351e2548676b054ed32d85a4472ec2e5bcc92c2450d8e17,901
 - completed:
     hackage: json-0.10@sha256:d9fc6b07ce92b8894825a17d2cf14799856767eb30c8bf55962baa579207d799,3210
     pantry-tree:
-      size: 3190
       sha256: 5654f66b7cd8bf087ac040a9b0a83eb064219eab32230f61a3adeddfdbb4d4cd
+      size: 3190
   original:
     hackage: json-0.10@sha256:d9fc6b07ce92b8894825a17d2cf14799856767eb30c8bf55962baa579207d799,3210
 snapshots:
 - completed:
-    size: 567241
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/10.yaml
-    sha256: 321b3b9f0c7f76994b39e0dabafdc76478274b4ff74cc5e43d410897a335ad3b
-  original: lts-17.10
+    sha256: afd5ba64ab602cabc2d3942d3d7e7dd6311bc626dcb415b901eaf576cb62f0ea
+    size: 640060
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/22.yaml
+  original: lts-21.22

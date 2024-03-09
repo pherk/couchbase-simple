@@ -33,8 +33,8 @@ connectInfo :: C.ConnectInfo
 connectInfo = C.ConnInfo
      { C.connectHost           = CC.HostName "192.168.178.24"
      , C.connectPort           = CC.PortNumber 8091
-     , C.connectUser           = Just "pmh"
-     , C.connectAuth           = Just "kiklarch"
+     , C.connectUser           = Just "admin"
+     , C.connectAuth           = Just "kikl968"
      , C.connectBucket         = Just "nabu"
      , C.connectDatabase       = 0
      , C.connectMaxConnections = 50

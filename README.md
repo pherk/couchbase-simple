@@ -1,16 +1,18 @@
 Early development stage, not for production yet.
 
-News (2021-11-15):
+News (2024-03-09):
 
-- a server using couchbase-simple is now running for 14 days
-- segfaults have been eliminated (hopefully ;-). 
+- ghc version upgraded to 9.4.8
+- libcouchbase upgraded to 3.3.12
+- a server using couchbase-simple has been running for 14 days
+- segfaults have been eliminated (hopefully ;-).
   The last nasty segfault was double destroying Couchbase Lcb which occured after running an hour.
 - with concurrents user up to 200 no memory leak detected
 
 caveats:
 
-- last libcouchbase tested: v3.2.3
-- Couchbase v7 not yet tested but should be compatible
+- Couchbase v7.1 tested
+- Couchbase v7.2 not yet tested but should be compatible
 - FFI Code has to be cleaned from remnants and ugly parts
 - Documentation is rudimentary
 
@@ -38,22 +40,23 @@ Prerequisites:
 - libevent : apt install libevent-dev
 - cmake: apt install cmake
 
-The installation was not complicated on my Ubuntu 20.0.4 system.
+The installation was not complicated on my Ubuntu 22.4 system.
 
 Do not forget to update the loader config: sudo /sbin/ldconfig -v
 
-For my convienience I have included the header files in the project.
+For my convienience I have included the C header files of libcouchbase in the project.
 You should edit the lib-dir and include-dir paths in the cabal file as needed.
 
 build with stack:
 
-`$ stack build` 
+`$ stack build`
 
 You can build and run tests:
 
 `$ stack test`
 
-You can also build and run benchmarks:
+You can also build and run benchmarks.
+defaultConnectInfo (Couchbase/Connection.hs) must be adapted for running successfully:
 
 `$ stack bench`
 

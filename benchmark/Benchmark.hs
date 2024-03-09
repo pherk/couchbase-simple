@@ -7,7 +7,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Data.Time
 import Database.Couchbase
-import           Database.Couchbase.Types
+-- import Database.Couchbase.Types
 import Text.Printf
 
 nRequests, nClients :: Int
@@ -21,7 +21,7 @@ main = do
     -- Preparation
     --
     conn <- connect defaultConnectInfo
-    
+
     ----------------------------------------------------------------------
     -- Spawn clients
     --
@@ -60,19 +60,19 @@ main = do
           Right r -> return ()
           _ -> error "error"
         return ()
-    
+
     timeAction "get" 1 $ do
         get "key" >>= \case
           Right r -> return ()
           _ -> error "error"
         return ()
-    
+
     timeAction "query use keys" 1 $ do
         query "select nabu.* from nabu USE KEYS [\"key\"]" >>= \case
           Right r -> return ()
           _ -> error "error"
         return ()
-    
+
 {-
     timeAction "mget" 1 $ do
         mget ["k1","k2","k3","k4","k5"] >>= \case
@@ -83,7 +83,7 @@ main = do
               _ -> error "error"
             return ()
           _ -> error "error"
-    
+
     timeAction "ping (pipelined)" 100 $ do
         pongs <- replicateM 100 ping
         let expected = replicate 100 (Right Pong)
@@ -97,7 +97,7 @@ main = do
           TxSuccess _ -> return ()
           _ -> error "error"
         return ()
-    
+
     timeAction "multiExec get 50" 50 $ do
         res <- multiExec $ do
           rs <- replicateM 50 (get "foo")
@@ -115,4 +115,4 @@ main = do
           TxSuccess 1000 -> return ()
           _ -> error "error"
         return ()
--}    
+-}
