@@ -51,12 +51,12 @@ build with stack:
 
 `$ stack build`
 
-You can build and run tests:
+You can build and run tests and benchmarks:
 
 `$ stack test`
+`$ stack bench`
 
-You can also build and run benchmarks.
 defaultConnectInfo (Couchbase/Connection.hs) must be adapted for running successfully:
 
-`$ stack bench`
+
 
